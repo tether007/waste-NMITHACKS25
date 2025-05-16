@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WasteWorks - Smart Waste Management</title>
+    <!-- Bootstrap CSS (Replit dark theme) -->
+    <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- OpenLayers CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v7.3.0/ol.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('index') }}">
+                <i class="fas fa-recycle me-2"></i>
+                WasteWorks
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == url_for('index') %}active{% endif %}" 
+                           href="{{ url_for('index') }}">
+                            <i class="fas fa-camera me-1"></i> Analyze Waste
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == url_for('marketplace') %}active{% endif %}"
+                           href="{{ url_for('marketplace') }}">
+                            <i class="fas fa-store me-1"></i> Marketplace
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == url_for('municipality') %}active{% endif %}"
+                           href="{{ url_for('municipality') }}">
+                            <i class="fas fa-building me-1"></i> Municipality
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == url_for('drop_points') %}active{% endif %}"
+                           href="{{ url_for('drop_points') }}">
+                            <i class="fas fa-map-marker-alt me-1"></i> Drop Points
+                        </a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle {% if '/infrastructure/' in request.path %}active{% endif %}" 
+                           href="#" id="infrastructureDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-road me-1"></i> Infrastructure
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="infrastructureDropdown">
+                            <li><a class="dropdown-item" href="{{ url_for('report_infrastructure') }}">
+                                <i class="fas fa-camera me-1"></i> Report Issues
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('my_infrastructure_reports') }}">
+                                <i class="fas fa-list me-1"></i> My Reports
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('infrastructure_map') }}">
+                                <i class="fas fa-map-marked-alt me-1"></i> Issues Map
+                            </a></li>
+                        </ul>
+                    </li>
+                    {% if current_user.is_authenticated %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
+                           data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-user-circle me-1"></i> {{ current_user.username }}
+                            <span class="badge bg-success ms-1">{{ current_user.eco_points }} pts</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                            <li><a class="dropdown-item" href="{{ url_for('auth.profile') }}">
+                                <i class="fas fa-user me-1"></i> My Profile
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('my_infrastructure_reports') }}">
+                                <i class="fas fa-road me-1"></i> My Infrastructure Reports
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">
+                                <i class="fas fa-sign-out-alt me-1"></i> Logout
+                            </a></li>
+                        </ul>
+                    </li>
+                    {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == url_for('auth.login') %}active{% endif %}"
+                           href="{{ url_for('auth.login') }}">
+                            <i class="fas fa-sign-in-alt me-1"></i> Login
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == url_for('auth.register') %}active{% endif %}"
+                           href="{{ url_for('auth.register') }}">
+                            <i class="fas fa-user-plus me-1"></i> Register
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container py-4">
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show mb-4" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Page content -->
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-light py-4 mt-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>WasteWorks Waste Management</h5>
+                    <p>
+                        Helping you properly identify and dispose of waste materials
+                        through AI-powered analysis and recycling connections.
+                    </p>
+                </div>
+                <div class="col-md-3">
+                    <h5>Quick Links</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="{{ url_for('index') }}" class="text-decoration-none text-light">Analyze Waste</a></li>
+                        <li><a href="{{ url_for('marketplace') }}" class="text-decoration-none text-light">Marketplace</a></li>
+                        <li><a href="{{ url_for('municipality') }}" class="text-decoration-none text-light">Municipality</a></li>
+                        <li><a href="{{ url_for('drop_points') }}" class="text-decoration-none text-light">Drop Points</a></li>
+                        <li><a href="{{ url_for('report_infrastructure') }}" class="text-decoration-none text-light">Report Infrastructure</a></li>
+                        <li><a href="{{ url_for('infrastructure_map') }}" class="text-decoration-none text-light">Infrastructure Map</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-3">
+                    <h5>Powered By</h5>
+                    <ul class="list-unstyled">
+                        <li>Google Gemini AI</li>
+                        <li>Flask</li>
+                        <li>Bootstrap</li>
+                        <li>OpenLayers</li>
+                    </ul>
+                </div>
+            </div>
+            <hr>
+            <div class="text-center">
+                <p>&copy; 2023 WasteWorks | All Rights Reserved</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JavaScript bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- OpenLayers JS -->
+    <script src="https://cdn.jsdelivr.net/npm/ol@v7.3.0/dist/ol.js"></script>
+    <!-- Custom JavaScript -->
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/webcam.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

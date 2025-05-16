@@ -1,0 +1,337 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-lg-12">
+            <h1 class="display-5 mb-3">
+                <i class="fas fa-road text-warning me-2"></i> 
+                Report Infrastructure Issues
+            </h1>
+            <p class="lead">
+                Help improve your community by reporting damaged infrastructure. Take a photo using your webcam
+                or upload an image file to report issues like damaged roads, streetlights, etc.
+            </p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-camera me-2"></i>
+                        Submit Infrastructure Report
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form action="{{ url_for('report_infrastructure') }}" method="POST" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Title</label>
+                            <input type="text" class="form-control" id="title" name="title" 
+                                   placeholder="e.g., Pothole on Main Street" required>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="category" class="form-label">Category</label>
+                                <select class="form-select" id="category" name="category" required>
+                                    <option value="" selected disabled>Select a category</option>
+                                    {% for key, value in categories.items() %}
+                                    <option value="{{ key }}">{{ value }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="severity" class="form-label">Severity</label>
+                                <select class="form-select" id="severity" name="severity" required>
+                                    <option value="" selected disabled>Select severity</option>
+                                    {% for key, data in severity_levels.items() %}
+                                    <option value="{{ key }}">{{ data.name }} - {{ data.description }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="3" 
+                                     placeholder="Describe the issue in detail" required></textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="location_description" class="form-label">Location Description</label>
+                            <input type="text" class="form-control" id="location_description" name="location_description" 
+                                   placeholder="e.g., Corner of Main St and 5th Ave, near the library" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label for="latitude" class="form-label">Latitude (optional)</label>
+                                    <input type="text" class="form-control" id="latitude" name="latitude" 
+                                           placeholder="e.g., 12.9716">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="longitude" class="form-label">Longitude (optional)</label>
+                                    <input type="text" class="form-control" id="longitude" name="longitude" 
+                                           placeholder="e.g., 77.5946">
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <button type="button" class="btn btn-sm btn-secondary" id="get-location">
+                                    <i class="fas fa-map-marker-alt me-1"></i> Use My Current Location
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <hr>
+                        
+                        <div class="mb-4">
+                            <label class="form-label">Image Upload</label>
+                            <div class="nav nav-tabs mb-3" id="upload-tab" role="tablist">
+                                <button class="nav-link active" id="webcam-tab" data-bs-toggle="tab" 
+                                        data-bs-target="#webcam-tab-pane" type="button" role="tab" 
+                                        aria-controls="webcam-tab-pane" aria-selected="true">
+                                    <i class="fas fa-camera me-1"></i> Webcam
+                                </button>
+                                <button class="nav-link" id="file-tab" data-bs-toggle="tab" 
+                                        data-bs-target="#file-tab-pane" type="button" role="tab" 
+                                        aria-controls="file-tab-pane" aria-selected="false">
+                                    <i class="fas fa-upload me-1"></i> File Upload
+                                </button>
+                            </div>
+                            <div class="tab-content" id="upload-tab-content">
+                                <div class="tab-pane fade show active" id="webcam-tab-pane" role="tabpanel" 
+                                     aria-labelledby="webcam-tab" tabindex="0">
+                                    
+                                    <div class="mb-3 text-center">
+                                        <div class="webcam-container mb-3">
+                                            <video id="webcam" autoplay playsinline width="100%" height="auto" 
+                                                  class="rounded border border-secondary"></video>
+                                            <canvas id="canvas" class="d-none"></canvas>
+                                        </div>
+                                        
+                                        <div class="webcam-buttons">
+                                            <button type="button" id="webcam-start" class="btn btn-primary me-2">
+                                                <i class="fas fa-video me-1"></i> Start Camera
+                                            </button>
+                                            <button type="button" id="webcam-capture" class="btn btn-success me-2" disabled>
+                                                <i class="fas fa-camera me-1"></i> Take Photo
+                                            </button>
+                                            <button type="button" id="webcam-retake" class="btn btn-warning me-2" disabled>
+                                                <i class="fas fa-redo me-1"></i> Retake
+                                            </button>
+                                        </div>
+                                        
+                                        <input type="hidden" id="webcam_image" name="webcam_image">
+                                        <div id="webcam-preview-container" class="mt-3 d-none">
+                                            <h6>Preview:</h6>
+                                            <img id="webcam-preview" class="img-fluid rounded border border-secondary" alt="Webcam preview">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="tab-pane fade" id="file-tab-pane" role="tabpanel" 
+                                     aria-labelledby="file-tab" tabindex="0">
+                                    <div class="mb-3">
+                                        <input class="form-control" type="file" id="image" name="image" accept="image/*">
+                                        <div class="form-text">Upload a clear photo of the infrastructure issue</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-paper-plane me-1"></i> Submit Report
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Reporting Guidelines
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <h6>What to Report</h6>
+                    <ul>
+                        <li>Damaged roads and potholes</li>
+                        <li>Broken streetlights or traffic signals</li>
+                        <li>Damaged footpaths and sidewalks</li>
+                        <li>Overflowing or damaged garbage bins</li>
+                        <li>Issues with drainage systems</li>
+                        <li>Water leaks or broken pipes</li>
+                        <li>Damaged public facilities</li>
+                    </ul>
+                    
+                    <h6>Tips for Good Reports</h6>
+                    <ol>
+                        <li>Take clear, well-lit photos</li>
+                        <li>Include landmarks in the photo to help identify the location</li>
+                        <li>Be specific about the location in your description</li>
+                        <li>Rate severity honestly based on safety risk and impact</li>
+                        <li>Provide contact details if you wish to be updated on the resolution</li>
+                    </ol>
+                    
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        For emergencies or hazardous situations requiring immediate attention, 
+                        please also contact local emergency services directly.
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-award me-2"></i>
+                        Rewards for Reporting
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p>As a thank you for helping improve your community, you'll receive:</p>
+                    <ul>
+                        <li><strong>20 Eco-Points</strong> for each verified report</li>
+                        <li><strong>+30 Bonus Points</strong> when your reported issue is resolved</li>
+                        <li>Track your contributions in your user profile</li>
+                    </ul>
+                    <p>Top contributors will be featured on our Community Champions leaderboard!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const video = document.getElementById('webcam');
+        const canvas = document.getElementById('canvas');
+        const startButton = document.getElementById('webcam-start');
+        const captureButton = document.getElementById('webcam-capture');
+        const retakeButton = document.getElementById('webcam-retake');
+        const webcamImage = document.getElementById('webcam_image');
+        const webcamPreview = document.getElementById('webcam-preview');
+        const webcamPreviewContainer = document.getElementById('webcam-preview-container');
+        const getLocationButton = document.getElementById('get-location');
+        const latitudeInput = document.getElementById('latitude');
+        const longitudeInput = document.getElementById('longitude');
+        
+        let stream = null;
+        
+        // Get location button
+        getLocationButton.addEventListener('click', function() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    latitudeInput.value = position.coords.latitude;
+                    longitudeInput.value = position.coords.longitude;
+                }, function(error) {
+                    console.error("Error getting location:", error);
+                    alert("Couldn't get your location. Please enter coordinates manually or describe the location.");
+                });
+            } else {
+                alert("Geolocation is not supported by this browser.");
+            }
+        });
+        
+        // Start webcam
+        startButton.addEventListener('click', async function() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    } 
+                });
+                video.srcObject = stream;
+                startButton.disabled = true;
+                captureButton.disabled = false;
+            } catch (err) {
+                console.error("Error accessing webcam:", err);
+                alert("Could not access webcam. Please ensure you've granted camera permissions or use file upload instead.");
+            }
+        });
+        
+        // Capture photo
+        captureButton.addEventListener('click', function() {
+            const context = canvas.getContext('2d');
+            
+            // Set canvas dimensions to match video
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            
+            // Draw the video frame to the canvas
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // Get the data URL and set it as the value of the hidden input
+            const dataURL = canvas.toDataURL('image/jpeg');
+            webcamImage.value = dataURL;
+            
+            // Show preview
+            webcamPreview.src = dataURL;
+            webcamPreviewContainer.classList.remove('d-none');
+            
+            // Enable retake button
+            retakeButton.disabled = false;
+            captureButton.disabled = true;
+            
+            // Hide video
+            video.classList.add('d-none');
+        });
+        
+        // Retake photo
+        retakeButton.addEventListener('click', function() {
+            // Clear canvas and hidden input
+            const context = canvas.getContext('2d');
+            context.clearRect(0, 0, canvas.width, canvas.height);
+            webcamImage.value = '';
+            
+            // Hide preview
+            webcamPreviewContainer.classList.add('d-none');
+            
+            // Show video
+            video.classList.remove('d-none');
+            
+            // Update buttons
+            retakeButton.disabled = true;
+            captureButton.disabled = false;
+        });
+        
+        // Clean up on tab change
+        document.getElementById('file-tab').addEventListener('click', function() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                video.srcObject = null;
+                startButton.disabled = false;
+                captureButton.disabled = true;
+                retakeButton.disabled = true;
+                webcamImage.value = '';
+                webcamPreviewContainer.classList.add('d-none');
+                video.classList.remove('d-none');
+            }
+        });
+        
+        // Form validation
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const webcamTab = document.getElementById('webcam-tab-pane').classList.contains('active');
+            const fileTab = document.getElementById('file-tab-pane').classList.contains('active');
+            
+            if (webcamTab && !webcamImage.value) {
+                e.preventDefault();
+                alert('Please take a photo with your webcam before submitting.');
+            } else if (fileTab && !document.getElementById('image').files.length) {
+                e.preventDefault();
+                alert('Please select an image file to upload.');
+            }
+        });
+    });
+</script>
+{% endblock %}

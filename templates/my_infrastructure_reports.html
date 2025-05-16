@@ -1,0 +1,324 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="display-5 mb-3">
+                <i class="fas fa-road text-warning me-2"></i> 
+                My Infrastructure Reports
+            </h1>
+            <p class="lead">
+                Track the status of infrastructure issues you've reported and see your impact on the community.
+            </p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{{ url_for('report_infrastructure') }}" class="btn btn-primary">
+                <i class="fas fa-plus-circle me-1"></i> Report New Issue
+            </a>
+        </div>
+    </div>
+
+    <!-- Reports Summary -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white mb-3">
+                <div class="card-body text-center">
+                    <h1 class="display-4">{{ reports|length }}</h1>
+                    <p class="mb-0">Total Reports</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark mb-3">
+                <div class="card-body text-center">
+                    <h1 class="display-4">{{ reports|selectattr('status', 'equalto', 'pending')|list|length }}</h1>
+                    <p class="mb-0">Pending</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white mb-3">
+                <div class="card-body text-center">
+                    <h1 class="display-4">{{ reports|selectattr('status', 'in', ['under_review', 'in_progress'])|list|length }}</h1>
+                    <p class="mb-0">In Progress</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white mb-3">
+                <div class="card-body text-center">
+                    <h1 class="display-4">{{ reports|selectattr('status', 'equalto', 'resolved')|list|length }}</h1>
+                    <p class="mb-0">Resolved</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reports List -->
+    <div class="card mb-4">
+        <div class="card-header bg-dark">
+            <h5 class="mb-0">
+                <i class="fas fa-list me-2"></i> My Reports
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            {% if reports %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Title</th>
+                            <th>Category</th>
+                            <th>Reported On</th>
+                            <th>Status</th>
+                            <th>Severity</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for report in reports %}
+                        <tr>
+                            <td>#{{ report.id }}</td>
+                            <td>{{ report.title }}</td>
+                            <td>{{ categories[report.category] }}</td>
+                            <td>{{ report.reported_at.strftime('%Y-%m-%d') }}</td>
+                            <td>
+                                <span class="badge bg-{{ status_types[report.status].color }}">
+                                    {{ status_types[report.status].name }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge bg-{{ severity_levels[report.severity].color }}">
+                                    {{ severity_levels[report.severity].name }}
+                                </span>
+                            </td>
+                            <td>
+                                <a href="{{ url_for('view_report', report_id=report.id) }}" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="p-4 text-center">
+                <div class="text-muted mb-3">
+                    <i class="fas fa-folder-open fa-4x"></i>
+                </div>
+                <h5>No reports yet</h5>
+                <p>You haven't submitted any infrastructure reports yet.</p>
+                <a href="{{ url_for('report_infrastructure') }}" class="btn btn-primary">
+                    <i class="fas fa-plus-circle me-1"></i> Create Your First Report
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if reports|selectattr('latitude', 'defined')|selectattr('longitude', 'defined')|list|length > 0 %}
+    <!-- Map of my reports -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
+                <i class="fas fa-map-marked-alt me-2"></i> My Reports Map
+            </h5>
+        </div>
+        <div class="card-body">
+            <div id="reports-map" style="height: 400px; width: 100%;"></div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Civic Impact -->
+    <div class="card bg-dark">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0">
+                <i class="fas fa-leaf me-2"></i> Your Civic Impact
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>Your Contribution Stats</h5>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Total reports submitted:</span>
+                        <strong>{{ reports|length }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Issues resolved:</span>
+                        <strong>{{ reports|selectattr('status', 'equalto', 'resolved')|list|length }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Points earned from reporting:</span>
+                        <strong>{{ reports|length * 20 }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Bonus points from resolutions:</span>
+                        <strong>{{ reports|selectattr('status', 'equalto', 'resolved')|list|length * 30 }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2 pt-2 border-top">
+                        <span><strong>Total impact points:</strong></span>
+                        <strong>{{ (reports|length * 20) + (reports|selectattr('status', 'equalto', 'resolved')|list|length * 30) }}</strong>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <h5>Community Impact</h5>
+                    <p>By reporting infrastructure issues, you're helping create a safer and more beautiful community for everyone.</p>
+                    
+                    <div class="alert alert-success">
+                        <i class="fas fa-thumbs-up me-2"></i>
+                        Your reports have contributed to community improvements in:
+                        <ul class="mb-0 mt-2">
+                            {% for category in reports|map(attribute='category')|unique %}
+                            <li>{{ categories[category] }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    
+                    <p class="mb-0"><strong>Keep reporting!</strong> The more issues we identify and fix, the better our community becomes.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if reports|selectattr('latitude', 'defined')|selectattr('longitude', 'defined')|list|length > 0 %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize the map
+        const map = new ol.Map({
+            target: 'reports-map',
+            layers: [
+                new ol.layer.Tile({
+                    source: new ol.source.OSM()
+                })
+            ],
+            view: new ol.View({
+                center: ol.proj.fromLonLat([77.5946, 12.9716]), // Bangalore coordinates
+                zoom: 12
+            })
+        });
+        
+        // Add markers for all reports with coordinates
+        const features = [];
+        
+        {% for report in reports %}
+        {% if report.latitude and report.longitude %}
+        const feature{{ report.id }} = new ol.Feature({
+            geometry: new ol.geom.Point(ol.proj.fromLonLat([{{ report.longitude }}, {{ report.latitude }}])),
+            name: '{{ report.title }}',
+            id: {{ report.id }},
+            status: '{{ report.status }}'
+        });
+        
+        features.push(feature{{ report.id }});
+        {% endif %}
+        {% endfor %}
+        
+        const vectorSource = new ol.source.Vector({
+            features: features
+        });
+        
+        const vectorLayer = new ol.layer.Vector({
+            source: vectorSource,
+            style: function(feature) {
+                // Color based on status
+                let color = '#6c757d'; // default gray
+                
+                switch(feature.get('status')) {
+                    case 'pending':
+                        color = '#ffc107'; // warning
+                        break;
+                    case 'under_review':
+                        color = '#0dcaf0'; // info
+                        break;
+                    case 'in_progress':
+                        color = '#0d6efd'; // primary
+                        break;
+                    case 'resolved':
+                        color = '#198754'; // success
+                        break;
+                    case 'rejected':
+                        color = '#dc3545'; // danger
+                        break;
+                }
+                
+                return new ol.style.Style({
+                    image: new ol.style.Circle({
+                        radius: 8,
+                        fill: new ol.style.Fill({color: color}),
+                        stroke: new ol.style.Stroke({color: '#ffffff', width: 2})
+                    })
+                });
+            }
+        });
+        
+        map.addLayer(vectorLayer);
+        
+        // Add popup overlay
+        const element = document.createElement('div');
+        element.className = 'ol-popup';
+        
+        const popup = new ol.Overlay({
+            element: element,
+            positioning: 'bottom-center',
+            stopEvent: false,
+            offset: [0, -10]
+        });
+        map.addOverlay(popup);
+        
+        // Display popup on click
+        map.on('click', function(evt) {
+            const feature = map.forEachFeatureAtPixel(evt.pixel, function(feature) {
+                return feature;
+            });
+            
+            if (feature) {
+                const coordinates = feature.getGeometry().getCoordinates();
+                popup.setPosition(coordinates);
+                
+                const content = `
+                    <div class="p-2">
+                        <strong>${feature.get('name')}</strong><br>
+                        <a href="/infrastructure/report/${feature.get('id')}" class="btn btn-sm btn-primary mt-1">View Details</a>
+                    </div>
+                `;
+                
+                element.innerHTML = content;
+                element.style.display = 'block';
+            } else {
+                element.style.display = 'none';
+            }
+        });
+        
+        // Change cursor style when hovering over a feature
+        map.on('pointermove', function(e) {
+            if (e.dragging) return;
+            
+            const pixel = map.getEventPixel(e.originalEvent);
+            const hit = map.hasFeatureAtPixel(pixel);
+            
+            map.getTargetElement().style.cursor = hit ? 'pointer' : '';
+        });
+    });
+</script>
+
+<style>
+.ol-popup {
+    background-color: white;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+    border-radius: 4px;
+    padding: 0;
+    color: #333;
+    max-width: 200px;
+    display: none;
+}
+</style>
+{% endif %}
+{% endblock %}

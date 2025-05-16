@@ -1,0 +1,532 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto text-center mb-4">
+        <h1 class="display-5 mb-3">
+            <i class="fas fa-recycle text-success me-2"></i>
+            WasteWorks Analysis & Recycling
+        </h1>
+        <p class="lead">
+            Upload an image of your waste item, and our AI will analyze it to help you
+            determine if it's recyclable and connect you to the right recycling channels.
+        </p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card mb-4">
+            <div class="card-header bg-primary bg-opacity-25">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-camera me-2"></i>
+                    Upload Waste Image
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data" id="upload-form">
+                    <!-- Image Capture Options -->
+                    <div class="mb-4">
+                        <div class="btn-group w-100" role="group" aria-label="Capture options">
+                            <input type="radio" class="btn-check" name="capture-option" id="option-upload" autocomplete="off" checked>
+                            <label class="btn btn-outline-primary" for="option-upload">
+                                <i class="fas fa-upload me-2"></i>Upload Image
+                            </label>
+                            
+                            <input type="radio" class="btn-check" name="capture-option" id="option-webcam" autocomplete="off">
+                            <label class="btn btn-outline-primary" for="option-webcam">
+                                <i class="fas fa-camera me-2"></i>Use Webcam
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- File Upload Option -->
+                    <div id="upload-container" class="upload-container">
+                        <div class="mb-3">
+                            <label for="waste-image" class="form-label">
+                                <i class="fas fa-cloud-upload-alt fs-1 d-block mb-2"></i>
+                                Select or drag an image here
+                            </label>
+                            <input type="file" class="form-control" id="waste-image" name="file" accept="image/*">
+                        </div>
+                    </div>
+                    
+                    <!-- Webcam Option -->
+                    <div id="webcam-option-container" class="d-none">
+                        <div id="webcam-alerts"></div>
+                        
+                        <button type="button" id="start-webcam" class="btn btn-outline-primary d-block w-100 mb-3">
+                            <i class="fas fa-video me-2"></i>Start Camera
+                        </button>
+                        
+                        <div id="webcam-container" class="d-none mb-3">
+                            <div class="position-relative">
+                                <video id="webcam-video" class="w-100 rounded" playsinline></video>
+                                <div class="position-absolute top-0 end-0 p-2">
+                                    <button type="button" id="close-webcam" class="btn btn-sm btn-danger d-none">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <button type="button" id="capture-image" class="btn btn-success d-none w-100 mt-2">
+                                <i class="fas fa-camera me-2"></i>Capture Image
+                            </button>
+                            <canvas id="webcam-canvas" class="d-none"></canvas>
+                        </div>
+                        
+                        <!-- Hidden input for webcam image data -->
+                        <input type="hidden" id="webcam-image-data" name="webcam_image">
+                    </div>
+                    
+                    <!-- Image Preview (shared between upload and webcam) -->
+                    <div id="image-preview-container" class="mb-3 text-center d-none">
+                        <p class="mb-2">Image Preview:</p>
+                        <img id="preview-image" src="#" alt="Preview" class="preview-image mb-3">
+                    </div>
+                    
+                    <!-- Analysis Button -->
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary" id="upload-btn">
+                            <span id="upload-spinner" class="spinner-border spinner-border-sm me-2 d-none" role="status" aria-hidden="true"></span>
+                            <i class="fas fa-search me-2"></i>
+                            Analyze Item
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6">
+        {% if result %}
+            <div class="card">
+                <div class="card-header bg-info bg-opacity-25">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-robot me-2"></i>
+                        Analysis Results
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <img src="{{ image_path }}" alt="Uploaded waste" class="preview-image">
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mb-4">
+                        <div class="text-center">
+                            <h6>Recyclable</h6>
+                            {% if result.is_recyclable %}
+                                <span class="badge bg-success fs-6"><i class="fas fa-check me-1"></i> Yes</span>
+                            {% else %}
+                                <span class="badge bg-danger fs-6"><i class="fas fa-times me-1"></i> No</span>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="text-center">
+                            <h6>Material</h6>
+                            <span class="badge bg-secondary fs-6">
+                                <i class="material-icon" data-material="{{ result.material }}"></i>
+                                {{ result.material }}
+                            </span>
+                        </div>
+                        
+                        <div class="text-center">
+                            <h6>E-Waste</h6>
+                            {% if result.is_ewaste %}
+                                <span class="badge bg-warning text-dark fs-6"><i class="fas fa-laptop me-1"></i> Yes</span>
+                            {% else %}
+                                <span class="badge bg-secondary fs-6"><i class="fas fa-times me-1"></i> No</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="mb-0">AI Analysis:</h6>
+                            <button id="copy-analysis" class="btn btn-sm btn-outline-secondary">
+                                <i class="fas fa-copy"></i> Copy analysis
+                            </button>
+                        </div>
+                        
+                        <!-- Tabbed Analysis Interface -->
+                        <div class="analysis-tabs">
+                            <ul class="nav nav-tabs" id="analysisTab" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active" id="summary-tab" data-bs-toggle="tab" 
+                                            data-bs-target="#summary" type="button" role="tab" aria-selected="true">
+                                        <i class="fas fa-clipboard-list me-1"></i> Summary
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="recycling-tab" data-bs-toggle="tab" 
+                                            data-bs-target="#recycling" type="button" role="tab" aria-selected="false">
+                                        <i class="fas fa-recycle me-1"></i> Recycling
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="impact-tab" data-bs-toggle="tab" 
+                                            data-bs-target="#impact" type="button" role="tab" aria-selected="false">
+                                        <i class="fas fa-globe-americas me-1"></i> Environmental Impact
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="full-tab" data-bs-toggle="tab" 
+                                            data-bs-target="#full" type="button" role="tab" aria-selected="false">
+                                        <i class="fas fa-file-alt me-1"></i> Full Analysis
+                                    </button>
+                                </li>
+                            </ul>
+                            
+                            <div class="tab-content p-3 bg-dark bg-opacity-10 border border-top-0 rounded-bottom" id="analysisTabContent">
+                                <!-- Summary Tab -->
+                                <div class="tab-pane fade show active" id="summary" role="tabpanel" aria-labelledby="summary-tab">
+                                    <div class="card border-0 bg-transparent">
+                                        <div class="card-body p-0">
+                                            {% if result.summary %}
+                                                <div class="item-summary">
+                                                    {{ result.summary|safe }}
+                                                </div>
+                                            {% else %}
+                                                <h6>Material: <span class="badge bg-info">{{ result.material }}</span></h6>
+                                                <div class="mt-3">
+                                                    <h6>Best Disposal Method:</h6>
+                                                    <p>{{ result.disposal_recommendations|truncate(150) }}</p>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Recycling Instructions Tab -->
+                                <div class="tab-pane fade" id="recycling" role="tabpanel" aria-labelledby="recycling-tab">
+                                    <div class="recycling-instructions">
+                                        {{ result.recycling_instructions|safe }}
+                                    </div>
+                                </div>
+                                
+                                <!-- Environmental Impact Tab -->
+                                <div class="tab-pane fade" id="impact" role="tabpanel" aria-labelledby="impact-tab">
+                                    <div class="environmental-impact">
+                                        {{ result.environmental_impact|safe }}
+                                    </div>
+                                </div>
+                                
+                                <!-- Full Analysis Tab -->
+                                <div class="tab-pane fade" id="full" role="tabpanel" aria-labelledby="full-tab">
+                                    <div class="ai-analysis-container" id="analysis-text">
+                                        {{ result.full_analysis|safe }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if result.is_recyclable %}
+                        <div class="alert alert-success">
+                            <h6><i class="fas fa-lightbulb me-2"></i>What's next?</h6>
+                            <p>This item appears to be recyclable! Would you like to list it in the marketplace or send it to a municipal recycling program?</p>
+                            
+                            <div class="d-grid gap-2 mt-3">
+                                <a href="{{ url_for('list_item') }}" class="btn btn-success">
+                                    <i class="fas fa-store me-2"></i>List in Marketplace
+                                </a>
+                                
+                                {% if waste_item %}
+                                <form method="POST" action="{{ url_for('send_to_municipality', item_id=waste_item.id) }}">
+                                    <button type="submit" class="btn btn-outline-success d-block w-100 mt-2">
+                                        <i class="fas fa-recycle me-2"></i>
+                                        Inform Municipality for Collection & Earn Rewards
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-danger">
+                            <h6><i class="fas fa-exclamation-triangle me-2"></i>Not Recyclable</h6>
+                            <p>Based on our analysis, this item is not recyclable through conventional channels. Please dispose of it according to your local waste management guidelines.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% else %}
+            <div class="card h-100">
+                <div class="card-body d-flex flex-column justify-content-center align-items-center text-center p-5">
+                    <i class="fas fa-info-circle text-info fs-1 mb-3"></i>
+                    <h4>No Analysis Yet</h4>
+                    <p class="text-muted">
+                        Upload an image of your waste item on the left to get an AI-powered analysis 
+                        of its recyclability and material composition.
+                    </p>
+                    <div class="mt-3">
+                        <h6>What you can analyze:</h6>
+                        <div class="d-flex justify-content-center flex-wrap gap-2 mt-2">
+                            <span class="badge bg-secondary"><i class="fas fa-wine-bottle me-1"></i> Plastics</span>
+                            <span class="badge bg-secondary"><i class="fas fa-newspaper me-1"></i> Paper</span>
+                            <span class="badge bg-secondary"><i class="fas fa-cog me-1"></i> Metal</span>
+                            <span class="badge bg-secondary"><i class="fas fa-glass-martini me-1"></i> Glass</span>
+                            <span class="badge bg-secondary"><i class="fas fa-laptop me-1"></i> Electronics</span>
+                            <span class="badge bg-secondary"><i class="fas fa-tshirt me-1"></i> Textiles</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row mt-5">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-success bg-opacity-25">
+                <h5 class="mb-0"><i class="fas fa-map-marker-alt me-2"></i>Find Waste Drop Points</h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">
+                    We have several waste collection and recycling drop points around the city. 
+                    Visit them to properly dispose of your recyclable waste.
+                </p>
+                <a href="{{ url_for('drop_points') }}" class="btn btn-outline-success">
+                    <i class="fas fa-map me-2"></i>View Drop Points Map
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-info bg-opacity-25">
+                <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>Track Your Waste</h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">
+                    Follow the journey of your waste from collection to recycling facility 
+                    using our blockchain-based tracking system.
+                </p>
+                <a href="#" class="btn btn-outline-info">
+                    <i class="fas fa-search me-2"></i>Track Your Contributions
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-warning bg-opacity-25">
+                <h5 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>Report Infrastructure Issues</h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">
+                    Notice damaged recycling bins, overflowing collection points, or other 
+                    waste management infrastructure issues? Report them here.
+                </p>
+                <a href="{{ url_for('report_infrastructure') }}" class="btn btn-outline-warning">
+                    <i class="fas fa-camera me-2"></i>Submit Infrastructure Report
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal For Login Prompt -->
+<div class="modal fade" id="loginPromptModal" tabindex="-1" aria-labelledby="loginPromptModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="loginPromptModalLabel">Login Required</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>You need to be logged in to use this feature. Would you like to log in now?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <a href="{{ url_for('auth.login') }}" class="btn btn-primary">Log In</a>
+                <a href="{{ url_for('auth.register') }}" class="btn btn-success">Sign Up</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const uploadForm = document.getElementById('upload-form');
+    const fileInput = document.getElementById('waste-image');
+    const uploadContainer = document.getElementById('upload-container');
+    const webcamOptionContainer = document.getElementById('webcam-option-container');
+    const webcamContainer = document.getElementById('webcam-container');
+    const startWebcamButton = document.getElementById('start-webcam');
+    const closeWebcamButton = document.getElementById('close-webcam');
+    const captureImageButton = document.getElementById('capture-image');
+    const webcamVideo = document.getElementById('webcam-video');
+    const webcamCanvas = document.getElementById('webcam-canvas');
+    const webcamImageData = document.getElementById('webcam-image-data');
+    const uploadBtn = document.getElementById('upload-btn');
+    const uploadSpinner = document.getElementById('upload-spinner');
+    const optionUpload = document.getElementById('option-upload');
+    const optionWebcam = document.getElementById('option-webcam');
+    const previewContainer = document.getElementById('image-preview-container');
+    const previewImage = document.getElementById('preview-image');
+    const webcamAlerts = document.getElementById('webcam-alerts');
+    
+    let stream = null;
+    
+    // Handle capture option change
+    optionUpload.addEventListener('change', function() {
+        if (this.checked) {
+            uploadContainer.classList.remove('d-none');
+            webcamOptionContainer.classList.add('d-none');
+            stopWebcam();
+        }
+    });
+    
+    optionWebcam.addEventListener('change', function() {
+        if (this.checked) {
+            uploadContainer.classList.add('d-none');
+            webcamOptionContainer.classList.remove('d-none');
+        }
+    });
+    
+    // Handle file input change
+    fileInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                previewImage.src = event.target.result;
+                previewContainer.classList.remove('d-none');
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+    
+    // Start webcam
+    startWebcamButton.addEventListener('click', async function() {
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({ 
+                video: {
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 },
+                    facingMode: { ideal: 'environment' }
+                }
+            });
+            webcamVideo.srcObject = stream;
+            webcamVideo.play();
+            webcamContainer.classList.remove('d-none');
+            this.classList.add('d-none');
+            closeWebcamButton.classList.remove('d-none');
+            captureImageButton.classList.remove('d-none');
+            
+            webcamAlerts.innerHTML = '';
+        } catch (err) {
+            console.error('Error accessing camera:', err);
+            webcamAlerts.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    Camera access denied or not available. Please check your camera permissions or try uploading an image instead.
+                </div>
+            `;
+        }
+    });
+    
+    // Close webcam
+    closeWebcamButton.addEventListener('click', function() {
+        stopWebcam();
+        webcamContainer.classList.add('d-none');
+        startWebcamButton.classList.remove('d-none');
+        this.classList.add('d-none');
+        captureImageButton.classList.add('d-none');
+    });
+    
+    // Capture image from webcam
+    captureImageButton.addEventListener('click', function() {
+        if (stream) {
+            const context = webcamCanvas.getContext('2d');
+            webcamCanvas.width = webcamVideo.videoWidth;
+            webcamCanvas.height = webcamVideo.videoHeight;
+            context.drawImage(webcamVideo, 0, 0, webcamCanvas.width, webcamCanvas.height);
+            
+            const imageDataUrl = webcamCanvas.toDataURL('image/jpeg');
+            webcamImageData.value = imageDataUrl.split(',')[1]; // Remove the data:image/jpeg;base64, part
+            
+            // Show preview
+            previewImage.src = imageDataUrl;
+            previewContainer.classList.remove('d-none');
+        }
+    });
+    
+    // Helper function to stop webcam
+    function stopWebcam() {
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+            stream = null;
+        }
+    }
+    
+    // Form submission
+    uploadForm.addEventListener('submit', function() {
+        // Show loading spinner
+        uploadBtn.disabled = true;
+        uploadSpinner.classList.remove('d-none');
+    });
+    
+    // Copy analysis to clipboard
+    document.getElementById('copy-analysis').addEventListener('click', function() {
+        const analysisText = document.getElementById('analysis-text');
+        
+        if (analysisText) {
+            // Create a temporary element for copying
+            const tempElement = document.createElement('textarea');
+            tempElement.value = analysisText.innerText;
+            document.body.appendChild(tempElement);
+            tempElement.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempElement);
+            
+            // Show success message
+            const originalText = this.innerHTML;
+            this.innerHTML = '<i class="fas fa-check me-1"></i> Copied!';
+            setTimeout(() => {
+                this.innerHTML = originalText;
+            }, 2000);
+        }
+    });
+    
+    // Set material icons based on the material type
+    document.querySelectorAll('.material-icon').forEach(function(icon) {
+        const material = icon.getAttribute('data-material').toLowerCase();
+        let iconClass = 'fas fa-question';
+        
+        switch(material) {
+            case 'plastic':
+                iconClass = 'fas fa-wine-bottle';
+                break;
+            case 'paper':
+                iconClass = 'fas fa-newspaper';
+                break;
+            case 'metal':
+                iconClass = 'fas fa-cog';
+                break;
+            case 'glass':
+                iconClass = 'fas fa-glass-martini';
+                break;
+            case 'electronic':
+                iconClass = 'fas fa-laptop';
+                break;
+            case 'textile':
+                iconClass = 'fas fa-tshirt';
+                break;
+            case 'organic':
+                iconClass = 'fas fa-leaf';
+                break;
+            case 'mixed':
+                iconClass = 'fas fa-random';
+                break;
+        }
+        
+        icon.className = iconClass + ' me-1';
+    });
+</script>
+{% endblock %}

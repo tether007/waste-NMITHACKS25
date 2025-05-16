@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 mb-4">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Analyze</a></li>
+                <li class="breadcrumb-item active" aria-current="page">List Item</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card">
+            <div class="card-header bg-success bg-opacity-25">
+                <h4 class="mb-0">
+                    <i class="fas fa-store me-2"></i>
+                    List Your Recyclable Item
+                </h4>
+            </div>
+            
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <img src="/static/{{ item.image_path }}" class="img-fluid rounded" alt="Item Image">
+                    </div>
+                    
+                    <div class="col-md-8">
+                        <h5>Item Summary</h5>
+                        <div class="d-flex mb-2">
+                            <span class="badge bg-secondary me-2">
+                                <i class="material-icon" data-material="{{ item.material }}"></i>
+                                {{ item.material }}
+                            </span>
+                            
+                            {% if item.is_recyclable %}
+                                <span class="badge bg-success me-2">
+                                    <i class="fas fa-recycle me-1"></i> Recyclable
+                                </span>
+                            {% endif %}
+                            
+                            {% if item.is_ewaste %}
+                                <span class="badge bg-warning text-dark">
+                                    <i class="fas fa-laptop me-1"></i> E-Waste
+                                </span>
+                            {% endif %}
+                        </div>
+                        
+                        {% if item.material|lower == 'plastic' %}
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                This plastic item will be automatically forwarded to the municipality for raw material processing.
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <form method="POST" action="{{ url_for('list_item') }}">
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Title <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="title" name="title" 
+                               placeholder="E.g., Clean Plastic Bottles, Metal Scraps" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="description" name="description" rows="4" 
+                                  placeholder="Describe your item in detail. Include quantity, condition, etc." required></textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="contact_email" class="form-label">Contact Email <span class="text-danger">*</span></label>
+                                <input type="email" class="form-control" id="contact_email" name="contact_email" required>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="contact_phone" class="form-label">Contact Phone</label>
+                                <input type="tel" class="form-control" id="contact_phone" name="contact_phone">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="location" class="form-label">Location <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="location" name="location" 
+                               placeholder="City, Area, or Neighborhood" required>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Important:</strong> By listing this item, you agree to make it available for pickup or collection
+                        by interested parties. Your contact information will be visible to other users.
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-check me-2"></i>
+                            List Item in Marketplace
+                        </button>
+                        
+                        <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-2"></i>
+                            Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,331 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <h1 class="display-5 mb-3">
+                <i class="fas fa-link text-primary me-2"></i> 
+                Waste Journey Tracking
+            </h1>
+            <p class="lead">
+                Track the journey of your waste item from drop-off to recycling completion.
+                Our blockchain-like system ensures transparency and integrity throughout the process.
+            </p>
+        </div>
+        <div class="col-lg-4 text-end">
+            {% if is_journey_valid %}
+            <div class="alert alert-success">
+                <i class="fas fa-check-circle me-2"></i> Blockchain Integrity Verified
+            </div>
+            {% else %}
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-triangle me-2"></i> Blockchain Integrity Error
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Waste Item and Journey Stats -->
+    <div class="row mb-4">
+        <div class="col-lg-6">
+            <div class="card bg-dark border-primary mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Waste Item Details</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-sm-6">
+                            <p><strong>Material:</strong> {{ waste_item.material }}</p>
+                            <p><strong>Item ID:</strong> {{ waste_item.id }}</p>
+                            <p><strong>Drop-off Date:</strong> 
+                                {% if waste_item.drop_date %}
+                                {{ waste_item.drop_date.strftime('%Y-%m-%d') }}
+                                {% else %}
+                                Not dropped off yet
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="col-sm-6">
+                            <p><strong>Recyclable:</strong> 
+                                {% if waste_item.is_recyclable %}
+                                <span class="badge bg-success">Yes</span>
+                                {% else %}
+                                <span class="badge bg-danger">No</span>
+                                {% endif %}
+                            </p>
+                            {% if waste_item.recycling_completed %}
+                            <p><strong>Status:</strong> <span class="badge bg-success">Recycling Complete</span></p>
+                            <p><strong>Completion Date:</strong> {{ waste_item.recycling_completion_date.strftime('%Y-%m-%d') }}</p>
+                            {% else %}
+                            <p><strong>Status:</strong> <span class="badge bg-warning">In Progress</span></p>
+                            {% endif %}
+                            {% if waste_item.drop_location %}
+                            <p><strong>Drop Location:</strong> {{ waste_item.drop_location.name }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-6">
+            <div class="card bg-dark border-success mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Journey Progress</h5>
+                </div>
+                <div class="card-body">
+                    <div class="progress mb-3" style="height: 25px;">
+                        <div class="progress-bar progress-bar-striped bg-success" 
+                             role="progressbar" 
+                             style="width: {{ journey_progress.progress_pct }}%;" 
+                             aria-valuenow="{{ journey_progress.progress_pct }}" 
+                             aria-valuemin="0" 
+                             aria-valuemax="100">
+                            {{ journey_progress.progress_pct }}%
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mb-3">
+                        <span>Stage: {{ journey_progress.stages_completed }} of {{ journey_progress.total_stages }}</span>
+                        <span>Current: 
+                            {% if journey_progress.current_stage %}
+                            <strong>{{ journey_stages[journey_progress.current_stage].name }}</strong>
+                            {% else %}
+                            Not started
+                            {% endif %}
+                        </span>
+                    </div>
+                    
+                    <div class="journey-stage-list mt-3">
+                        <div class="row">
+                            {% for stage_key, stage_data in journey_stages.items() %}
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-center mb-2">
+                                    <div class="me-2">
+                                        {% if stage_key in [block.stage for block in journey_blocks] %}
+                                        <i class="fas fa-check-circle text-success"></i>
+                                        {% else %}
+                                        <i class="fas fa-circle text-muted"></i>
+                                        {% endif %}
+                                    </div>
+                                    <div>
+                                        <strong>{{ stage_data.name }}</strong>
+                                        <div class="text-muted small">{{ stage_data.description }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- QR Code for Verification -->
+    <div class="row mb-4">
+        <div class="col-lg-4">
+            <div class="card bg-dark border-info">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-qrcode me-2"></i>
+                        Verification QR Code
+                    </h5>
+                </div>
+                <div class="card-body text-center">
+                    <div id="qrcode" class="mb-3"></div>
+                    <p class="mb-0">Scan this QR code to verify the journey of this waste item.</p>
+                    <small class="text-muted">Verification URL: {{ qr_data.verification_url }}</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add New Stage Form (Demo) -->
+        <div class="col-lg-8">
+            <div class="card bg-dark border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-plus-circle me-2"></i>
+                        Add Journey Stage (Demo)
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        In a real-world scenario, stages would be added automatically by authorized entities throughout the recycling process.
+                        This form is for demonstration purposes only.
+                    </p>
+                    
+                    <form action="{{ url_for('add_journey_stage', item_id=waste_item.id) }}" method="POST">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="stage" class="form-label">Stage</label>
+                                <select class="form-select" id="stage" name="stage" required>
+                                    <option value="" selected disabled>Select a stage</option>
+                                    {% for stage_key, stage_data in journey_stages.items() %}
+                                    <option value="{{ stage_key }}">{{ stage_data.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="location" class="form-label">Location</label>
+                                <input type="text" class="form-control" id="location" name="location" 
+                                       placeholder="e.g., Recycling Center, Koramangala" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="details" class="form-label">Details</label>
+                            <textarea class="form-control" id="details" name="details" rows="2" 
+                                     placeholder="Provide details about this stage" required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="verified_by" class="form-label">Verified By</label>
+                            <input type="text" class="form-control" id="verified_by" name="verified_by" 
+                                   value="{{ current_user.username }}" required>
+                        </div>
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-plus-circle me-1"></i> Add Stage
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Blockchain Visualization -->
+    <div class="card bg-dark border-info mb-4">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0">
+                <i class="fas fa-link me-2"></i>
+                Blockchain Journey
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if journey_blocks %}
+            <div class="blockchain-visualization mb-4">
+                <div class="row">
+                    {% for block in journey_blocks %}
+                    <div class="col-lg-4 mb-3">
+                        <div class="card bg-dark border-secondary h-100">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <span><i class="fas fa-{{ journey_stages[block.stage].icon }} me-2"></i> Block #{{ block.id }}</span>
+                                <span class="badge bg-secondary">{{ block.timestamp.strftime('%Y-%m-%d') }}</span>
+                            </div>
+                            <div class="card-body">
+                                <h6 class="card-title">{{ journey_stages[block.stage].name }}</h6>
+                                <p class="card-text">{{ block.details }}</p>
+                                <p class="mb-1"><small><strong>Location:</strong> {{ block.location }}</small></p>
+                                <p class="mb-1"><small><strong>Verified by:</strong> {{ block.verified_by }}</small></p>
+                                
+                                <div class="mt-3 pt-2 border-top border-secondary">
+                                    <div class="d-flex justify-content-between">
+                                        <small class="text-muted">Previous Hash:</small>
+                                        <small class="blockchain-hash">{{ block.previous_hash[:8] if block.previous_hash else 'Genesis Block' }}</small>
+                                    </div>
+                                    <div class="d-flex justify-content-between mt-1">
+                                        <small class="text-muted">Block Hash:</small>
+                                        <small class="blockchain-hash">{{ block.block_hash[:8] }}...{{ block.block_hash[-8:] }}</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-footer bg-dark">
+                                <div class="d-flex justify-content-center">
+                                    <div class="blockchain-arrow">
+                                        {% if not loop.last %}
+                                        <i class="fas fa-arrow-right fa-lg"></i>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Hash Visual Representation -->
+            <div class="hash-visualization mb-3">
+                <div class="card bg-dark border-secondary">
+                    <div class="card-header">
+                        <h6 class="mb-0">Blockchain Authenticity</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="hash-chain d-flex flex-wrap justify-content-center">
+                            {% for block in journey_blocks %}
+                            <div class="hash-item me-2 mb-2 p-2 border border-secondary rounded 
+                                       {% if block.is_valid() %}bg-success bg-opacity-25{% else %}bg-danger bg-opacity-25{% endif %}">
+                                <small class="blockchain-hash">{{ block.block_hash[:6] }}</small>
+                                {% if not loop.last %}
+                                <i class="fas fa-link mx-2"></i>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+                    
+            {% else %}
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                No blockchain data available yet. The journey will begin once the waste item enters the recycling process.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Generate QR code
+        const qrCodeData = {
+            waste_item_id: {{ waste_item.id }},
+            verification_url: '{{ qr_data.verification_url }}'
+        };
+        
+        // Generate QR code with URL
+        const qrcode = new QRCode(document.getElementById("qrcode"), {
+            text: window.location.origin + '{{ qr_data.verification_url }}',
+            width: 160,
+            height: 160,
+            colorDark: "#000000",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.H
+        });
+    });
+</script>
+
+<style>
+.blockchain-hash {
+    font-family: monospace;
+}
+
+.hash-item {
+    transition: all 0.3s;
+}
+
+.hash-item:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 10px rgba(0,255,0,0.5);
+}
+
+#qrcode {
+    display: inline-block;
+    padding: 10px;
+    background: white;
+    border-radius: 4px;
+}
+
+@media (max-width: 992px) {
+    .blockchain-visualization .card-footer {
+        display: none;
+    }
+}
+</style>
+{% endblock %}
