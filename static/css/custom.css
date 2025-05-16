@@ -25,3 +25,43 @@
     color: var(--bs-primary);
     font-weight: bold;
 }
+
+/* Custom styles */
+#preview-image,
+.preview-image,
+.uploaded-image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 8px;
+    background-color: #f8f9fa;
+    padding: 10px;
+    margin: 0;
+}
+
+#image-preview-container {
+    width: 640px;
+    height: 480px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 auto;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    overflow: hidden;
+    background: transparent;
+    position: relative;
+    z-index: 1;
+}
+
+#webcam-video {
+    width: 640px;
+    height: 480px;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+#webcam-canvas {
+    display: none;
+}
