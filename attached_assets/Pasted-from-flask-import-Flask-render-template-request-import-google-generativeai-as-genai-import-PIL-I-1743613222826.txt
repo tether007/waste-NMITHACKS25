@@ -1,0 +1,90 @@
+from flask import Flask, render_template, request
+import google.generativeai as genai
+import PIL.Image
+import io
+import os
+
+# Configure Google Gemini AI
+genai.configure(api_key="AIzaSyAI-BJRT0oVhWMRie6Sjl39F1z9U2SAcnI")  # Replace with your actual API key
+
+app = Flask(__name__)
+
+# Folder to store uploaded images
+UPLOAD_FOLDER = "static/uploads"
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+
+def analyze_waste(image_path):
+    """Analyze waste image using Google Gemini"""
+    try:
+        # Open image using PIL
+        image = PIL.Image.open(image_path)
+        
+        # Convert to RGB if needed
+        if image.mode != 'RGB':
+            image = image.convert('RGB')
+        
+        # Configure the model
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        
+        # Generate content
+        response = model.generate_content(
+            [
+                "Analyze this waste image. Provide details about:\n"
+                "1. Is it recyclable?\n"
+                "2. Is it e-waste?\n"
+                "3. What is its primary material composition?\n"
+                "Be specific and concise.", 
+                image
+            ],
+            generation_config={
+                "max_output_tokens": 300,
+                "temperature": 0.4,
+            }
+        )
+        
+        # Parse the response
+        result = {
+            "full_analysis": response.text,"\n"
+            "recyclable": "Yes" if "recyclable" in response.text.lower() else "No",
+            "e_waste": "Yes" if "electronic" in response.text.lower() else "No",
+            "material": "Mixed" if "mixed" in response.text.lower() else "Not specified"
+        }
+        
+        return result
+
+    except Exception as e:
+        print(f"Error in image analysis: {e}")
+        return {"error": str(e)}
+
+@app.route("/", methods=["GET", "POST"])
+def index():
+    result = None
+    image_path = None
+
+    if request.method == "POST":
+        if "file" not in request.files:
+            return "No file uploaded"
+
+        file = request.files["file"]
+        if file.filename == "":
+            return "No selected file"
+
+        # Ensure uploads directory exists
+        os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
+
+        # Save file
+        file_path = os.path.join(app.config["UPLOAD_FOLDER"], file.filename)
+        file.save(file_path)
+
+        # Analyze the image
+        result = analyze_waste(file_path)
+        image_path = file_path
+
+        # Debug print
+        print("Analysis Result:", result)
+
+    return render_template("index.html", result=result, image_path=image_path)
+
+if __name__ == "__main__":
+    app.run(debug=True)                               use this in backend and create a simple webapp with simple UI/UX that if the given image is recyclable it automatically asks three things 1. list in marketplace again market place should be a webpage when clicked it should be where we can list the garbage that can be recycled 2. if it is recyclable and plastic it should send the listing in market place  to the municipality such that they can use it in building raw materials like bricks to build infrastructure

@@ -1,0 +1,392 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="display-5 mb-3">
+                <i class="fas fa-map-marked-alt text-primary me-2"></i> 
+                Infrastructure Reports Map
+            </h1>
+            <p class="lead">
+                View all reported infrastructure issues across the city and track their resolution status.
+            </p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{{ url_for('report_infrastructure') }}" class="btn btn-primary">
+                <i class="fas fa-plus-circle me-1"></i> Report New Issue
+            </a>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <!-- Filters -->
+        <div class="col-md-3">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-filter me-2"></i> Filters
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Category</label>
+                        <select class="form-select" id="category-filter">
+                            <option value="all" selected>All Categories</option>
+                            {% for key, value in categories.items() %}
+                            <option value="{{ key }}">{{ value }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Status</label>
+                        <select class="form-select" id="status-filter">
+                            <option value="all" selected>All Statuses</option>
+                            {% for key, data in status_types.items() %}
+                            <option value="{{ key }}">{{ data.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Severity</label>
+                        <select class="form-select" id="severity-filter">
+                            <option value="all" selected>All Severities</option>
+                            {% for key, data in severity_levels.items() %}
+                            <option value="{{ key }}">{{ data.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <button id="apply-filters" class="btn btn-primary w-100">
+                        <i class="fas fa-check me-1"></i> Apply Filters
+                    </button>
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-pie me-2"></i> Statistics
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Total Reports:</span>
+                        <strong>{{ reports|length }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Pending:</span>
+                        <strong>{{ reports|selectattr('status', 'equalto', 'pending')|list|length }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>In Progress:</span>
+                        <strong>{{ reports|selectattr('status', 'in', ['under_review', 'in_progress'])|list|length }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Resolved:</span>
+                        <strong>{{ reports|selectattr('status', 'equalto', 'resolved')|list|length }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>High Severity:</span>
+                        <strong>{{ reports|selectattr('severity', 'in', ['high', 'critical'])|list|length }}</strong>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i> Legend
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <h6>Status Colors</h6>
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="color-dot bg-warning me-2"></div>
+                        <span>Pending</span>
+                    </div>
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="color-dot bg-info me-2"></div>
+                        <span>Under Review</span>
+                    </div>
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="color-dot bg-primary me-2"></div>
+                        <span>In Progress</span>
+                    </div>
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="color-dot bg-success me-2"></div>
+                        <span>Resolved</span>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <div class="color-dot bg-danger me-2"></div>
+                        <span>Rejected</span>
+                    </div>
+                    
+                    <h6 class="mt-3">Tips</h6>
+                    <ul class="mb-0">
+                        <li>Click on a marker to see details</li>
+                        <li>Use filters to find specific issues</li>
+                        <li>Report new issues using the button above</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Map -->
+        <div class="col-md-9">
+            <div class="card">
+                <div class="card-body p-0">
+                    <div id="infrastructure-map" style="height: 700px; width: 100%;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<style>
+.color-dot {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+}
+
+.ol-popup {
+    position: absolute;
+    background-color: white;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+    border-radius: 4px;
+    padding: 0;
+    color: #333;
+    max-width: 300px;
+    display: none;
+    z-index: 1000;
+}
+
+.ol-popup-content {
+    padding: 15px;
+}
+
+.ol-popup-closer {
+    text-decoration: none;
+    position: absolute;
+    top: 2px;
+    right: 8px;
+    color: #333;
+}
+
+.ol-popup-image {
+    width: 100%;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 4px 4px 0 0;
+}
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Create map data structure to store our report features
+        const reportFeatures = {};
+        const vectorSource = new ol.source.Vector();
+        
+        // Create features for each report
+        {% for report in reports %}
+        {% if report.latitude and report.longitude %}
+        const feature{{ report.id }} = new ol.Feature({
+            geometry: new ol.geom.Point(ol.proj.fromLonLat([{{ report.longitude }}, {{ report.latitude }}])),
+            id: {{ report.id }},
+            title: '{{ report.title }}',
+            category: '{{ report.category }}',
+            status: '{{ report.status }}',
+            severity: '{{ report.severity }}',
+            date: '{{ report.reported_at.strftime('%Y-%m-%d') }}',
+            image: '{{ url_for('static', filename=report.image_path) }}',
+            location: '{{ report.location_description }}',
+            statusText: '{{ status_types[report.status].name }}'
+        });
+        
+        reportFeatures[{{ report.id }}] = feature{{ report.id }};
+        vectorSource.addFeature(feature{{ report.id }});
+        {% endif %}
+        {% endfor %}
+        
+        // Create the vector layer with custom styles
+        const vectorLayer = new ol.layer.Vector({
+            source: vectorSource,
+            style: function(feature) {
+                // Color based on status
+                let color = '#6c757d'; // default gray
+                
+                switch(feature.get('status')) {
+                    case 'pending':
+                        color = '#ffc107'; // warning
+                        break;
+                    case 'under_review':
+                        color = '#0dcaf0'; // info
+                        break;
+                    case 'in_progress':
+                        color = '#0d6efd'; // primary
+                        break;
+                    case 'resolved':
+                        color = '#198754'; // success
+                        break;
+                    case 'rejected':
+                        color = '#dc3545'; // danger
+                        break;
+                }
+                
+                // Size based on severity
+                let radius = 8;
+                
+                switch(feature.get('severity')) {
+                    case 'low':
+                        radius = 6;
+                        break;
+                    case 'medium':
+                        radius = 8;
+                        break;
+                    case 'high':
+                        radius = 10;
+                        break;
+                    case 'critical':
+                        radius = 12;
+                        break;
+                }
+                
+                return new ol.style.Style({
+                    image: new ol.style.Circle({
+                        radius: radius,
+                        fill: new ol.style.Fill({color: color}),
+                        stroke: new ol.style.Stroke({color: '#ffffff', width: 2})
+                    })
+                });
+            }
+        });
+        
+        // Initialize map
+        const map = new ol.Map({
+            target: 'infrastructure-map',
+            layers: [
+                new ol.layer.Tile({
+                    source: new ol.source.OSM()
+                }),
+                vectorLayer
+            ],
+            view: new ol.View({
+                center: ol.proj.fromLonLat([77.5946, 12.9716]), // Bangalore coordinates
+                zoom: 12
+            })
+        });
+        
+        // Create popup overlay
+        const popup = document.createElement('div');
+        popup.className = 'ol-popup';
+        
+        const closer = document.createElement('a');
+        closer.className = 'ol-popup-closer';
+        closer.href = '#';
+        closer.innerHTML = '&times;';
+        
+        const content = document.createElement('div');
+        content.className = 'ol-popup-content';
+        
+        popup.appendChild(closer);
+        popup.appendChild(content);
+        
+        const overlay = new ol.Overlay({
+            element: popup,
+            positioning: 'bottom-center',
+            stopEvent: false,
+            offset: [0, -10]
+        });
+        
+        map.addOverlay(overlay);
+        
+        // Close popup when clicked
+        closer.onclick = function() {
+            overlay.setPosition(undefined);
+            closer.blur();
+            return false;
+        };
+        
+        // Show popup when feature clicked
+        map.on('click', function(evt) {
+            const feature = map.forEachFeatureAtPixel(evt.pixel, function(feature) {
+                return feature;
+            });
+            
+            if (feature) {
+                const coordinates = feature.getGeometry().getCoordinates();
+                
+                // Populate popup content
+                content.innerHTML = `
+                    <img src="${feature.get('image')}" class="ol-popup-image">
+                    <div class="p-3">
+                        <h5>${feature.get('title')}</h5>
+                        <span class="badge bg-${getStatusColor(feature.get('status'))} mb-2">${feature.get('statusText')}</span>
+                        <p class="mb-1"><small><i class="fas fa-map-marker-alt me-1"></i> ${feature.get('location')}</small></p>
+                        <p class="mb-3"><small><i class="fas fa-calendar me-1"></i> Reported: ${feature.get('date')}</small></p>
+                        <a href="/infrastructure/report/${feature.get('id')}" class="btn btn-sm btn-primary w-100">View Full Details</a>
+                    </div>
+                `;
+                
+                overlay.setPosition(coordinates);
+                popup.style.display = 'block';
+            } else {
+                popup.style.display = 'none';
+            }
+        });
+        
+        // Change cursor when over feature
+        map.on('pointermove', function(e) {
+            if (e.dragging) return;
+            
+            const pixel = map.getEventPixel(e.originalEvent);
+            const hit = map.hasFeatureAtPixel(pixel);
+            
+            map.getTargetElement().style.cursor = hit ? 'pointer' : '';
+        });
+        
+        // Helper function to get status color class
+        function getStatusColor(status) {
+            switch(status) {
+                case 'pending': return 'warning';
+                case 'under_review': return 'info';
+                case 'in_progress': return 'primary';
+                case 'resolved': return 'success';
+                case 'rejected': return 'danger';
+                default: return 'secondary';
+            }
+        }
+        
+        // Filter functionality
+        document.getElementById('apply-filters').addEventListener('click', function() {
+            const categoryFilter = document.getElementById('category-filter').value;
+            const statusFilter = document.getElementById('status-filter').value;
+            const severityFilter = document.getElementById('severity-filter').value;
+            
+            // Clear existing features
+            vectorSource.clear();
+            
+            // Add features based on filters
+            for (const id in reportFeatures) {
+                const feature = reportFeatures[id];
+                const featureCategory = feature.get('category');
+                const featureStatus = feature.get('status');
+                const featureSeverity = feature.get('severity');
+                
+                const categoryMatch = categoryFilter === 'all' || featureCategory === categoryFilter;
+                const statusMatch = statusFilter === 'all' || featureStatus === statusFilter;
+                const severityMatch = severityFilter === 'all' || featureSeverity === severityFilter;
+                
+                if (categoryMatch && statusMatch && severityMatch) {
+                    vectorSource.addFeature(feature);
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

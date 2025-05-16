@@ -1,0 +1,27 @@
+/* White space for bullet points */
+.white-space-pre-line {
+    white-space: pre-line;
+}
+
+/* Bullet points formatting */
+.bullet-list {
+    display: block;
+    margin-bottom: 1rem;
+}
+
+.bullet-list li, 
+.bullet-point {
+    display: block;
+    position: relative;
+    padding-left: 1.5rem;
+    margin-bottom: 0.5rem;
+    line-height: 1.5;
+}
+
+.bullet-point::before {
+    content: "•";
+    position: absolute;
+    left: 0;
+    color: var(--bs-primary);
+    font-weight: bold;
+}

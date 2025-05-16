@@ -1,0 +1,328 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-md-9">
+            <h1 class="display-5 mb-3">
+                <i class="fas fa-road text-warning me-2"></i> 
+                Infrastructure Report Details
+            </h1>
+            <p class="lead">
+                Report #{{ report.id }}: {{ report.title }}
+            </p>
+        </div>
+        <div class="col-md-3 text-end">
+            <a href="{{ url_for('my_infrastructure_reports') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i> Back to My Reports
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center 
+                            bg-{{ status_types[report.status].color }} text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Report Details
+                    </h5>
+                    <span class="badge bg-light text-dark">
+                        <i class="fas fa-calendar me-1"></i> 
+                        {{ report.reported_at.strftime('%Y-%m-%d %H:%M') }}
+                    </span>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-8">
+                            <h4>{{ report.title }}</h4>
+                            <div class="d-flex mb-3">
+                                <div class="me-3">
+                                    <span class="badge bg-{{ severity_levels[report.severity].color }} me-1">
+                                        {{ severity_levels[report.severity].name }} Severity
+                                    </span>
+                                </div>
+                                <div>
+                                    <span class="badge bg-secondary">
+                                        {{ categories[report.category] }}
+                                    </span>
+                                </div>
+                            </div>
+                            <p class="text-muted">
+                                <i class="fas fa-user me-1"></i> Reported by: 
+                                {{ report.user.username if report.user else 'Anonymous' }}
+                            </p>
+                            <p>{{ report.description }}</p>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="status-card p-3 rounded border
+                                       border-{{ status_types[report.status].color }}
+                                       bg-{{ status_types[report.status].color }} bg-opacity-10">
+                                <h5 class="text-{{ status_types[report.status].color }}">
+                                    <i class="fas fa-tasks me-1"></i> Status
+                                </h5>
+                                <h4 class="text-{{ status_types[report.status].color }}">
+                                    {{ status_types[report.status].name }}
+                                </h4>
+                                <p class="mb-0">
+                                    <small>{{ status_types[report.status].description }}</small>
+                                </p>
+                                {% if report.status_updated_at and report.status != 'pending' %}
+                                <p class="mt-2 mb-0">
+                                    <small>
+                                        <i class="fas fa-clock me-1"></i>
+                                        Updated: {{ report.status_updated_at.strftime('%Y-%m-%d') }}
+                                    </small>
+                                </p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-8">
+                            <h5>Location</h5>
+                            <p>{{ report.location_description }}</p>
+                            {% if report.latitude and report.longitude %}
+                            <div class="d-flex">
+                                <div class="me-3">
+                                    <strong>Latitude:</strong> {{ report.latitude }}
+                                </div>
+                                <div>
+                                    <strong>Longitude:</strong> {{ report.longitude }}
+                                </div>
+                            </div>
+                            <!-- Small map to show location -->
+                            <div class="mt-2" id="report-map" style="height: 200px; width: 100%;"></div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-4">
+                            {% if report.municipality_notes %}
+                            <div class="municipality-notes p-3 rounded border border-info bg-dark">
+                                <h5 class="text-info">
+                                    <i class="fas fa-clipboard-list me-1"></i> Municipality Notes
+                                </h5>
+                                <p>{{ report.municipality_notes }}</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Report Image -->
+                    <div class="report-image mb-3">
+                        <h5>Submitted Photo</h5>
+                        <img src="{{ url_for('static', filename=report.image_path) }}" 
+                             class="img-fluid rounded border border-secondary" 
+                             alt="Report Image" style="max-height: 400px;">
+                    </div>
+                    
+                    <!-- Update Status Form (Demo purposes, would be admin-only in production) -->
+                    <div class="mt-4">
+                        <h5>Update Status (Demo)</h5>
+                        <form action="{{ url_for('update_infrastructure_status', report_id=report.id) }}" method="POST">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <select class="form-select" name="status" required>
+                                        {% for key, data in status_types.items() %}
+                                        <option value="{{ key }}" {% if report.status == key %}selected{% endif %}>
+                                            {{ data.name }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" name="notes" 
+                                               placeholder="Optional notes">
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-save me-1"></i> Update
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-line me-2"></i>
+                        Resolution Process
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="resolution-timeline">
+                        <div class="timeline-item d-flex mb-3">
+                            <div class="timeline-icon {% if report.status != 'pending' %}bg-success{% else %}bg-primary{% endif %} rounded-circle me-3">
+                                <i class="fas fa-file-alt text-white p-2"></i>
+                            </div>
+                            <div class="timeline-content">
+                                <h6>Report Received</h6>
+                                <p class="text-muted mb-0">{{ report.reported_at.strftime('%Y-%m-%d') }}</p>
+                                <p class="mb-0">Your report has been successfully submitted.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="timeline-item d-flex mb-3">
+                            <div class="timeline-icon {% if report.status == 'under_review' or report.status == 'in_progress' or report.status == 'resolved' %}bg-success{% elif report.status == 'rejected' %}bg-danger{% else %}bg-secondary{% endif %} rounded-circle me-3">
+                                <i class="fas fa-search text-white p-2"></i>
+                            </div>
+                            <div class="timeline-content">
+                                <h6>Under Review</h6>
+                                {% if report.status == 'under_review' or report.status == 'in_progress' or report.status == 'resolved' %}
+                                <p class="text-muted mb-0">{{ report.status_updated_at.strftime('%Y-%m-%d') }}</p>
+                                <p class="mb-0">Your report is being reviewed by authorities.</p>
+                                {% elif report.status == 'rejected' %}
+                                <p class="mb-0">This stage was skipped.</p>
+                                {% else %}
+                                <p class="mb-0">Pending review by municipality.</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="timeline-item d-flex mb-3">
+                            <div class="timeline-icon {% if report.status == 'in_progress' or report.status == 'resolved' %}bg-success{% elif report.status == 'rejected' %}bg-danger{% else %}bg-secondary{% endif %} rounded-circle me-3">
+                                <i class="fas fa-tools text-white p-2"></i>
+                            </div>
+                            <div class="timeline-content">
+                                <h6>Work In Progress</h6>
+                                {% if report.status == 'in_progress' or report.status == 'resolved' %}
+                                <p class="text-muted mb-0">{{ report.status_updated_at.strftime('%Y-%m-%d') }}</p>
+                                <p class="mb-0">Repair work is underway.</p>
+                                {% elif report.status == 'rejected' %}
+                                <p class="mb-0">This stage was skipped.</p>
+                                {% else %}
+                                <p class="mb-0">Waiting for work to begin.</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="timeline-item d-flex mb-3">
+                            <div class="timeline-icon {% if report.status == 'resolved' %}bg-success{% elif report.status == 'rejected' %}bg-danger{% else %}bg-secondary{% endif %} rounded-circle me-3">
+                                <i class="fas fa-check-circle text-white p-2"></i>
+                            </div>
+                            <div class="timeline-content">
+                                <h6>Resolution</h6>
+                                {% if report.status == 'resolved' %}
+                                <p class="text-muted mb-0">{{ report.status_updated_at.strftime('%Y-%m-%d') }}</p>
+                                <p class="mb-0">Issue has been successfully resolved.</p>
+                                {% elif report.status == 'rejected' %}
+                                <p class="mb-0">Report was rejected.</p>
+                                {% else %}
+                                <p class="mb-0">Pending completion.</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-award me-2"></i>
+                        Your Contribution
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p>Thank you for helping improve your community!</p>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span>Report Submission:</span>
+                        <span class="badge bg-success px-3 py-2">+20 Points</span>
+                    </div>
+                    
+                    {% if report.status == 'resolved' %}
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span>Issue Resolution Bonus:</span>
+                        <span class="badge bg-warning px-3 py-2">+30 Points</span>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span><strong>Total Points Earned:</strong></span>
+                        <span class="badge bg-primary px-3 py-2">50 Points</span>
+                    </div>
+                    {% else %}
+                    <hr>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span><strong>Total Points Earned:</strong></span>
+                        <span class="badge bg-primary px-3 py-2">20 Points</span>
+                    </div>
+                    <div class="mt-2 text-muted">
+                        <small>Receive 30 additional points when this issue is resolved!</small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if report.latitude and report.longitude %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize the map
+        const map = new ol.Map({
+            target: 'report-map',
+            layers: [
+                new ol.layer.Tile({
+                    source: new ol.source.OSM()
+                })
+            ],
+            view: new ol.View({
+                center: ol.proj.fromLonLat([{{ report.longitude }}, {{ report.latitude }}]),
+                zoom: 15
+            })
+        });
+        
+        // Add a marker for the report location
+        const markerFeature = new ol.Feature({
+            geometry: new ol.geom.Point(ol.proj.fromLonLat([{{ report.longitude }}, {{ report.latitude }}]))
+        });
+        
+        const vectorSource = new ol.source.Vector({
+            features: [markerFeature]
+        });
+        
+        const vectorLayer = new ol.layer.Vector({
+            source: vectorSource,
+            style: new ol.style.Style({
+                image: new ol.style.Circle({
+                    radius: 8,
+                    fill: new ol.style.Fill({color: '#FF0000'}),
+                    stroke: new ol.style.Stroke({color: '#FFFFFF', width: 2})
+                })
+            })
+        });
+        
+        map.addLayer(vectorLayer);
+    });
+</script>
+{% endif %}
+
+<style>
+.status-card {
+    transition: all 0.3s;
+}
+
+.resolution-timeline .timeline-icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.timeline-content {
+    flex-grow: 1;
+}
+</style>
+{% endblock %}

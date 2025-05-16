@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1 class="display-5">
+            <i class="fas fa-building text-warning me-2"></i>
+            Municipality Recycling Program
+        </h1>
+        <p class="lead">
+            View items that have been sent to the municipal recycling program, 
+            particularly plastic materials that can be used as raw materials in construction.
+        </p>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body bg-warning bg-opacity-10">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-info-circle text-warning fs-3 me-3"></i>
+                    <div>
+                        <h5 class="mb-1">About Municipal Recycling</h5>
+                        <p class="mb-0">
+                            The municipality program focuses on collecting plastic waste that can be 
+                            processed into raw materials for construction and other public works. 
+                            Plastic items that are recyclable are automatically forwarded here.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if items %}
+    <div class="row">
+        <div class="col-12 mb-4">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Items Sent to Municipality</h5>
+                        <span class="badge bg-primary">{{ items|length }} Items</span>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Image</th>
+                                    <th>Item</th>
+                                    <th>Material</th>
+                                    <th>Date Sent</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in items %}
+                                    <tr>
+                                        <td style="width: 100px;">
+                                            <img src="/static/{{ item.image_path }}" class="img-thumbnail" alt="{{ item.title }}" style="max-height: 80px;">
+                                        </td>
+                                        <td>
+                                            <strong>{{ item.title }}</strong>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary">
+                                                <i class="material-icon" data-material="{{ item.material }}"></i>
+                                                {{ item.material }}
+                                            </span>
+                                        </td>
+                                        <td>{{ item.created_at.strftime('%Y-%m-%d') }}</td>
+                                        <td>
+                                            {% if item.municipality_status == "Pending" %}
+                                                <span class="badge bg-warning text-dark">Pending</span>
+                                            {% elif item.municipality_status == "Accepted" %}
+                                                <span class="badge bg-success">Accepted</span>
+                                            {% elif item.municipality_status == "Rejected" %}
+                                                <span class="badge bg-danger">Rejected</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">{{ item.municipality_status }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group">
+                                                <a href="{{ url_for('item_details', item_id=item.id) }}" class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                
+                                                <!-- Demo-only update status buttons, would be admin-only in production -->
+                                                <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                                    Update
+                                                </button>
+                                                <ul class="dropdown-menu">
+                                                    <li>
+                                                        <form method="POST" action="{{ url_for('update_municipality_status', item_id=item.id) }}">
+                                                            <input type="hidden" name="status" value="Pending">
+                                                            <button type="submit" class="dropdown-item">
+                                                                <i class="fas fa-clock text-warning me-2"></i>Set as Pending
+                                                            </button>
+                                                        </form>
+                                                    </li>
+                                                    <li>
+                                                        <form method="POST" action="{{ url_for('update_municipality_status', item_id=item.id) }}">
+                                                            <input type="hidden" name="status" value="Accepted">
+                                                            <button type="submit" class="dropdown-item">
+                                                                <i class="fas fa-check text-success me-2"></i>Set as Accepted
+                                                            </button>
+                                                        </form>
+                                                    </li>
+                                                    <li>
+                                                        <form method="POST" action="{{ url_for('update_municipality_status', item_id=item.id) }}">
+                                                            <input type="hidden" name="status" value="Rejected">
+                                                            <button type="submit" class="dropdown-item">
+                                                                <i class="fas fa-times text-danger me-2"></i>Set as Rejected
+                                                            </button>
+                                                        </form>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-success bg-opacity-25">
+                    <h5 class="mb-0">
+                        <i class="fas fa-recycle me-2"></i>
+                        Material Usage
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <h6>How Plastic Waste is Used in Construction:</h6>
+                    <ul>
+                        <li><strong>Plastic Roads:</strong> Mixed with asphalt to create stronger, longer-lasting roads</li>
+                        <li><strong>Plastic Bricks:</strong> Made from compressed plastic waste for affordable housing</li>
+                        <li><strong>Concrete Mixture:</strong> Adding processed plastic to concrete to improve durability</li>
+                        <li><strong>Roofing Tiles:</strong> Converting plastics into weather-resistant roofing materials</li>
+                        <li><strong>Furniture:</strong> Creating public benches and tables from recycled plastics</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-info bg-opacity-25">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-pie me-2"></i>
+                        Environmental Impact
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <h6>Benefits of Municipal Plastic Recycling:</h6>
+                    <div class="d-flex flex-column gap-3">
+                        <div class="d-flex">
+                            <div class="me-3 text-success">
+                                <i class="fas fa-trash-alt fs-3"></i>
+                            </div>
+                            <div>
+                                <strong>Waste Reduction</strong>
+                                <p class="mb-0">Decreases landfill waste and plastic pollution in waterways</p>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex">
+                            <div class="me-3 text-info">
+                                <i class="fas fa-industry fs-3"></i>
+                            </div>
+                            <div>
+                                <strong>Resource Conservation</strong>
+                                <p class="mb-0">Reduces need for new plastic production, saving oil and energy</p>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex">
+                            <div class="me-3 text-warning">
+                                <i class="fas fa-hard-hat fs-3"></i>
+                            </div>
+                            <div>
+                                <strong>Construction Innovation</strong>
+                                <p class="mb-0">Creates durable materials with unique properties for building</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% else %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-building text-muted fs-1 mb-3"></i>
+                    <h3>No items sent to municipality yet</h3>
+                    <p class="text-muted">
+                        When plastic items are listed in the marketplace, they will be automatically routed
+                        to the municipality for processing into raw materials.
+                    </p>
+                    <a href="{{ url_for('index') }}" class="btn btn-primary mt-3">
+                        <i class="fas fa-plus me-2"></i>
+                        Analyze & List Item
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}

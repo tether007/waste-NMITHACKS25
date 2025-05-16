@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WasteWorks - AI-Powered Waste Management Platform</title>
+    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+    <style>
+        .feature-icon {
+            font-size: 2rem;
+            background-color: var(--bs-secondary-bg);
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+        }
+        
+        .hero-section {
+            padding: 5rem 0;
+            background-color: var(--bs-dark);
+        }
+    </style>
+</head>
+<body data-bs-theme="dark">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#">WasteWorks</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#features">Features</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#technology">Technology</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="https://github.com/yourusername/wasteworks" target="_blank">GitHub</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <section class="hero-section text-center text-white">
+        <div class="container">
+            <h1 class="display-4 fw-bold mb-4">Revolutionizing Waste Management with AI</h1>
+            <p class="lead mb-5">WasteWorks is a comprehensive waste management platform that uses AI to identify recyclable materials, track waste journeys, and promote environmental awareness.</p>
+            <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+                <a href="https://github.com/yourusername/wasteworks" class="btn btn-primary btn-lg px-4 gap-3">View on GitHub</a>
+                <a href="#features" class="btn btn-outline-light btn-lg px-4">Learn More</a>
+            </div>
+        </div>
+    </section>
+
+    <section class="py-5" id="features">
+        <div class="container">
+            <h2 class="text-center mb-5">Key Features</h2>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="feature text-center">
+                        <div class="feature-icon mx-auto">
+                            <span>🔍</span>
+                        </div>
+                        <h3>AI Material Identification</h3>
+                        <p>Upload images of waste items to receive instant analysis on recyclability, material composition, and proper disposal methods.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature text-center">
+                        <div class="feature-icon mx-auto">
+                            <span>🔗</span>
+                        </div>
+                        <h3>Blockchain Waste Tracking</h3>
+                        <p>Monitor waste items from drop-off to recycling facility with a secure, transparent tracking system.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature text-center">
+                        <div class="feature-icon mx-auto">
+                            <span>📊</span>
+                        </div>
+                        <h3>Recycling Guidance</h3>
+                        <p>Get detailed instructions on how to prepare and recycle different types of materials properly.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="row g-4 mt-3">
+                <div class="col-md-4">
+                    <div class="feature text-center">
+                        <div class="feature-icon mx-auto">
+                            <span>📱</span>
+                        </div>
+                        <h3>Infrastructure Reporting</h3>
+                        <p>Report damaged waste management infrastructure through webcam photos.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature text-center">
+                        <div class="feature-icon mx-auto">
+                            <span>🏆</span>
+                        </div>
+                        <h3>Rewards System</h3>
+                        <p>Earn eco-points and achievements for responsible waste management.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature text-center">
+                        <div class="feature-icon mx-auto">
+                            <span>📍</span>
+                        </div>
+                        <h3>Drop Point Mapping</h3>
+                        <p>Find nearby recycling centers and drop points for different material types.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="py-5 bg-light" id="technology" data-bs-theme="dark">
+        <div class="container">
+            <h2 class="text-center mb-5">Technology Stack</h2>
+            <div class="row">
+                <div class="col-md-6">
+                    <h4>Backend</h4>
+                    <ul class="list-group mb-4">
+                        <li class="list-group-item">Flask (Python)</li>
+                        <li class="list-group-item">PostgreSQL Database</li>
+                        <li class="list-group-item">Flask-Login & Flask-Bcrypt</li>
+                        <li class="list-group-item">Flask-SQLAlchemy</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h4>AI & Machine Learning</h4>
+                    <ul class="list-group mb-4">
+                        <li class="list-group-item">Google Gemini API</li>
+                        <li class="list-group-item">OpenCV Image Processing</li>
+                        <li class="list-group-item">scikit-learn Classification</li>
+                        <li class="list-group-item">Color-based Material Detection</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-md-6">
+                    <h4>Frontend</h4>
+                    <ul class="list-group mb-4">
+                        <li class="list-group-item">HTML5 & CSS3</li>
+                        <li class="list-group-item">Bootstrap Framework</li>
+                        <li class="list-group-item">JavaScript</li>
+                        <li class="list-group-item">Responsive Design</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h4>Additional Features</h4>
+                    <ul class="list-group mb-4">
+                        <li class="list-group-item">Blockchain-like Tracking System</li>
+                        <li class="list-group-item">Geolocation Services</li>
+                        <li class="list-group-item">User Achievement System</li>
+                        <li class="list-group-item">Infrastructure Reporting</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="py-4 bg-dark text-white">
+        <div class="container text-center">
+            <p>© 2025 WasteWorks - MIT License</p>
+            <p><a href="https://github.com/yourusername/wasteworks" class="text-white">View on GitHub</a></p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

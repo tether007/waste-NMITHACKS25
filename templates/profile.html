@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <!-- User profile & stats -->
+    <div class="col-lg-4 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-info text-white">
+                <h4 class="mb-0"><i class="fas fa-user-circle me-2"></i>My Profile</h4>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-4">
+                    <div class="display-1 mb-2">
+                        <i class="fas fa-user-circle text-info"></i>
+                    </div>
+                    <h5>{{ current_user.username }}</h5>
+                    <p class="text-muted">{{ current_user.email }}</p>
+                    <p>Member since {{ current_user.join_date.strftime('%B %d, %Y') }}</p>
+                </div>
+                
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="card bg-dark mb-3">
+                            <div class="card-body py-3">
+                                <h5 class="mb-0 eco-points-value">{{ current_user.eco_points }}</h5>
+                                <small class="text-success">Eco Points</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="card bg-dark mb-3">
+                            <div class="card-body py-3">
+                                <h5 class="mb-0 streak-value">{{ current_user.recycling_streak }}</h5>
+                                <small class="text-warning">Day Streak</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="stats-container mt-3">
+                    <h6 class="border-bottom pb-2 mb-3">My Stats</h6>
+                    <div class="stat-item d-flex justify-content-between mb-2">
+                        <span>Items Analyzed:</span>
+                        <span class="fw-bold">{{ stats.total_items }}</span>
+                    </div>
+                    <div class="stat-item d-flex justify-content-between mb-2">
+                        <span>Recyclable Items:</span>
+                        <span class="fw-bold text-success">{{ stats.recyclable_items }}</span>
+                    </div>
+                    <div class="stat-item d-flex justify-content-between mb-2">
+                        <span>E-Waste Items:</span>
+                        <span class="fw-bold text-warning">{{ stats.ewaste_items }}</span>
+                    </div>
+                    <div class="stat-item d-flex justify-content-between mb-2">
+                        <span>Marketplace Listings:</span>
+                        <span class="fw-bold text-info">{{ stats.listed_items }}</span>
+                    </div>
+                    <div class="stat-item d-flex justify-content-between mb-2">
+                        <span>Achievements:</span>
+                        <span class="fw-bold text-primary">{{ stats.achievement_count }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Achievements section -->
+    <div class="col-lg-8">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-warning text-dark">
+                <h4 class="mb-0"><i class="fas fa-trophy me-2"></i>Achievements</h4>
+            </div>
+            <div class="card-body">
+                {% if stats.achievements %}
+                    <div class="row">
+                        {% for user_achievement in stats.achievements %}
+                            <div class="col-md-6 mb-3">
+                                <div class="achievement-card card h-100 bg-dark">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-center">
+                                            <div class="achievement-icon me-3">
+                                                <i class="fas fa-medal fa-2x text-warning"></i>
+                                            </div>
+                                            <div>
+                                                <h5 class="mb-1">{{ user_achievement.achievement.name }}</h5>
+                                                <p class="mb-1 text-muted small">{{ user_achievement.achievement.description }}</p>
+                                                <div class="text-success small">
+                                                    <i class="fas fa-plus-circle"></i> {{ user_achievement.achievement.points_awarded }} points
+                                                </div>
+                                                <div class="text-muted small mt-1">
+                                                    <i class="far fa-calendar-alt"></i> Earned on {{ user_achievement.earned_date.strftime('%b %d, %Y') }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i> You haven't earned any achievements yet. Start recycling to earn your first badge!
+                    </div>
+                    
+                    <h5 class="mt-4 mb-3">Available Achievements</h5>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="achievement-card card h-100 bg-dark locked">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center">
+                                        <div class="achievement-icon me-3 text-muted">
+                                            <i class="fas fa-medal fa-2x"></i>
+                                        </div>
+                                        <div>
+                                            <h5 class="mb-1">Recycle Rookie</h5>
+                                            <p class="mb-1 text-muted small">Recycle your first item</p>
+                                            <div class="text-muted small">
+                                                <i class="fas fa-plus-circle"></i> 50 points
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="achievement-card card h-100 bg-dark locked">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center">
+                                        <div class="achievement-icon me-3 text-muted">
+                                            <i class="fas fa-medal fa-2x"></i>
+                                        </div>
+                                        <div>
+                                            <h5 class="mb-1">Plastic Hero</h5>
+                                            <p class="mb-1 text-muted small">Recycle 5 plastic items</p>
+                                            <div class="text-muted small">
+                                                <i class="fas fa-plus-circle"></i> 100 points
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Recent rewards -->
+        <div class="card shadow-sm">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0"><i class="fas fa-coins me-2"></i>Recent Rewards</h4>
+            </div>
+            <div class="card-body">
+                {% if stats.recent_rewards %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Activity</th>
+                                    <th>Points</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for reward in stats.recent_rewards %}
+                                    <tr>
+                                        <td>{{ reward.created_at.strftime('%b %d, %Y') }}</td>
+                                        <td>{{ reward.description }}</td>
+                                        <td class="text-success">+{{ reward.points }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i> You haven't earned any rewards yet. Start recycling to earn points!
+                    </div>
+                    
+                    <div class="mt-4">
+                        <h5 class="mb-3">Ways to Earn Points</h5>
+                        <ul class="list-group">
+                            <li class="list-group-item bg-transparent d-flex justify-content-between align-items-center">
+                                Recycling an item
+                                <span class="badge bg-success">+10 points</span>
+                            </li>
+                            <li class="list-group-item bg-transparent d-flex justify-content-between align-items-center">
+                                Properly disposing e-waste
+                                <span class="badge bg-success">+20 points</span>
+                            </li>
+                            <li class="list-group-item bg-transparent d-flex justify-content-between align-items-center">
+                                Listing an item in marketplace
+                                <span class="badge bg-success">+5 points</span>
+                            </li>
+                            <li class="list-group-item bg-transparent d-flex justify-content-between align-items-center">
+                                Dropping off at collection center
+                                <span class="badge bg-success">+15 points</span>
+                            </li>
+                        </ul>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

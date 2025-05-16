@@ -1,0 +1,41 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment
+.env
+venv/
+ENV/
+
+# Database
+instance/
+*.db
+*.sqlite3
+
+# Uploaded files
+static/uploads/
+
+# Logs
+*.log
+
+# Flask specific
+flask_session/
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Replit files
+.replit
+replit.nix
+.upm/
+
+# IDE
+.idea/
+.vscode/
+
+# System Files
+.DS_Store
+Thumbs.db
