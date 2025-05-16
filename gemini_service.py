@@ -6,7 +6,7 @@ from gemini_formatter import format_gemini_response, extract_sections_from_raw_t
 import material_detection
 
 # Configure Google Gemini AI with API key
-api_key = os.environ.get("GEMINI_API_KEY", "AIzaSyAI-BJRT0oVhWMRie6Sjl39F1z9U2SAcnI")
+api_key = os.environ.get("GEMINI_API_KEY", "AIzaSyC7NpSGRRDmacS1iwOd24Vu_5oMYr1oeSA")
 genai.configure(api_key=api_key)
 
 # Flag to enable/disable material detection
@@ -41,7 +41,7 @@ def analyze_waste(image_path):
                 material_detection_result = None
         
         # Configure the model
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        model = genai.GenerativeModel('gemini-2.0-flash')
         
         # Add detected material information to the prompt if available
         material_info = ""
