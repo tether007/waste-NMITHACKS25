@@ -176,14 +176,19 @@ def is_item_recyclable(response_dict, raw_text=""):
     if response_dict.get('is_recyclable') == True or response_dict.get('recyclable') == "Yes":
         return "Recyclable"
     
-    if response_dict.get('is_recyclable') == False or response_dict.get('recyclable') == "No":
-        return "Not recyclable"
-    
     # Determine material type
     material_type = get_material_type(response_dict, raw_text).lower()
     
-    # Automatically mark certain materials as recyclable
-    if material_type in ["plastic", "paper", "metal", "electronic", "e-waste"]:
+    # Always mark plastic as recyclable regardless of other indicators
+    if material_type == "plastic":
+        return "Recyclable"
+    
+    # If explicitly marked as not recyclable and not plastic
+    if response_dict.get('is_recyclable') == False or response_dict.get('recyclable') == "No":
+        return "Not recyclable"
+    
+    # Automatically mark certain other materials as recyclable
+    if material_type in ["paper", "metal", "electronic", "e-waste"]:
         return "Recyclable"
     
     # Check text for recyclability indicators
