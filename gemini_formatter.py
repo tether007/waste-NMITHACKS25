@@ -163,7 +163,7 @@ def get_item_description(response_dict, material_type, raw_text=""):
 
 def is_item_recyclable(response_dict, raw_text=""):
     """
-    Determine if the item is recyclable based on response dictionary or raw text
+    Determine if the item is recyclable based on response dictionary, material type, or raw text.
     
     Args:
         response_dict: Dictionary containing the Gemini AI response
@@ -176,9 +176,15 @@ def is_item_recyclable(response_dict, raw_text=""):
     if response_dict.get('is_recyclable') == True or response_dict.get('recyclable') == "Yes":
         return "Recyclable"
     
-    # Check if UI explicitly indicates non-recyclability
     if response_dict.get('is_recyclable') == False or response_dict.get('recyclable') == "No":
         return "Not recyclable"
+    
+    # Determine material type
+    material_type = get_material_type(response_dict, raw_text).lower()
+    
+    # Automatically mark certain materials as recyclable
+    if material_type in ["plastic", "paper", "metal", "electronic", "e-waste"]:
+        return "Recyclable"
     
     # Check text for recyclability indicators
     text_to_analyze = raw_text.lower() if raw_text else (response_dict.get('full_analysis', '')).lower()
@@ -188,8 +194,8 @@ def is_item_recyclable(response_dict, raw_text=""):
     elif "not recyclable" in text_to_analyze or "cannot be recycled" in text_to_analyze or "non-recyclable" in text_to_analyze:
         return "Not recyclable"
     
-    # Default to cautious approach
     return "Check local recycling guidelines"
+
 
 def is_e_waste(response_dict, material_type, raw_text=""):
     """
