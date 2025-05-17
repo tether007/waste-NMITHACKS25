@@ -66,6 +66,159 @@ def convert_to_bullet_points(text, keep_headings=True):
     # Join with no extra newlines (the CSS will handle spacing)
     return heading + "".join(bullet_points)
 
+def get_material_type(response_dict, raw_text=""):
+    """
+    Determine the material type based on response dictionary or raw text
+    
+    Args:
+        response_dict: Dictionary containing the Gemini AI response
+        raw_text: Optional raw text to analyze if response_dict doesn't have material info
+        
+    Returns:
+        String with the determined material type
+    """
+    # First check if material is explicitly provided
+    if response_dict.get('material'):
+        return response_dict.get('material')
+    
+    # Next check if material detection info is available
+    if 'material_detection' in response_dict and response_dict['material_detection'].get('primary_material'):
+        return response_dict['material_detection']['primary_material'].capitalize()
+    
+    # If UI indicates a specific material was selected, use that
+    if response_dict.get('ui_selected_material'):
+        return response_dict.get('ui_selected_material')
+    
+    # If not, try to infer from text
+    text_to_analyze = raw_text.lower() if raw_text else (response_dict.get('full_analysis', '')).lower()
+    
+    # Check for material mentions in priority order
+    if "paper" in text_to_analyze:
+        return "Paper"
+    elif "plastic" in text_to_analyze:
+        return "Plastic"
+    elif "metal" in text_to_analyze:
+        return "Metal"
+    elif "glass" in text_to_analyze:
+        return "Glass"
+    elif "fabric" in text_to_analyze or "textile" in text_to_analyze:
+        return "Textile"
+    elif "electronic" in text_to_analyze or "e-waste" in text_to_analyze:
+        return "Electronic"
+    else:
+        return "Mixed materials"
+
+def get_item_description(response_dict, material_type, raw_text=""):
+    """
+    Get the appropriate item description based on the response dict, determined material type, and raw text
+    
+    Args:
+        response_dict: Dictionary containing the Gemini AI response
+        material_type: Already determined material type
+        raw_text: Optional raw text to analyze
+        
+    Returns:
+        String with appropriate item description
+    """
+    # If there's an explicit item type, use it
+    if response_dict.get('item_type'):
+        return response_dict.get('item_type')
+    
+    # Otherwise analyze the text
+    text_to_analyze = raw_text.lower() if raw_text else (response_dict.get('full_analysis', '')).lower()
+    
+    # Handle material-specific items based on determined material type
+    if material_type == "Paper":
+        if "document" in text_to_analyze or "sheet" in text_to_analyze:
+            return "Paper document"
+        elif "box" in text_to_analyze or "cardboard" in text_to_analyze:
+            return "Paper box"
+        elif "notebook" in text_to_analyze:
+            return "Notebook"
+        elif "newspaper" in text_to_analyze or "magazine" in text_to_analyze:
+            return "Publication"
+        else:
+            return "Paper item"
+    
+    # Only if specifically identified as electronic AND material is electronic
+    if material_type == "Electronic" and ("device" in text_to_analyze or "electronic" in text_to_analyze):
+        return "Electronic device"
+    
+    # Other common items by frequency in text
+    if "bottle" in text_to_analyze:
+        return f"{material_type} bottle"
+    elif "container" in text_to_analyze:
+        return f"{material_type} container"
+    elif "packaging" in text_to_analyze:
+        return f"{material_type} packaging"
+    elif "bag" in text_to_analyze:
+        return f"{material_type} bag"
+    elif "cup" in text_to_analyze:
+        return f"{material_type} cup"
+    elif "box" in text_to_analyze:
+        return f"{material_type} box"
+    
+    # Default to material-based description
+    return f"{material_type} item"
+
+def is_item_recyclable(response_dict, raw_text=""):
+    """
+    Determine if the item is recyclable based on response dictionary or raw text
+    
+    Args:
+        response_dict: Dictionary containing the Gemini AI response
+        raw_text: Optional raw text to analyze
+        
+    Returns:
+        String indicating recyclability status
+    """
+    # Check if UI explicitly indicates recyclability
+    if response_dict.get('is_recyclable') == True or response_dict.get('recyclable') == "Yes":
+        return "Recyclable"
+    
+    # Check if UI explicitly indicates non-recyclability
+    if response_dict.get('is_recyclable') == False or response_dict.get('recyclable') == "No":
+        return "Not recyclable"
+    
+    # Check text for recyclability indicators
+    text_to_analyze = raw_text.lower() if raw_text else (response_dict.get('full_analysis', '')).lower()
+    
+    if "recyclable: yes" in text_to_analyze or "is recyclable" in text_to_analyze or "can be recycled" in text_to_analyze:
+        return "Recyclable"
+    elif "not recyclable" in text_to_analyze or "cannot be recycled" in text_to_analyze or "non-recyclable" in text_to_analyze:
+        return "Not recyclable"
+    
+    # Default to cautious approach
+    return "Check local recycling guidelines"
+
+def is_e_waste(response_dict, material_type, raw_text=""):
+    """
+    Determine if the item is e-waste based on response dict, material type, and text
+    
+    Args:
+        response_dict: Dictionary containing the Gemini AI response
+        material_type: Already determined material type
+        raw_text: Optional raw text to analyze
+    
+    Returns:
+        Boolean indicating e-waste status
+    """
+    # Check if UI explicitly indicates e-waste
+    if response_dict.get('e_waste') == "Yes" or response_dict.get('is_e_waste') == True:
+        return True
+    
+    # If material is electronic, likely e-waste
+    if material_type == "Electronic":
+        return True
+    
+    # Check text for e-waste indicators
+    text_to_analyze = raw_text.lower() if raw_text else (response_dict.get('full_analysis', '')).lower()
+    
+    if "e-waste" in text_to_analyze or "electronic waste" in text_to_analyze:
+        return True
+    
+    return False
+
 def format_gemini_response(response_dict):
     """
     Format the response from Gemini AI to clean up sections
@@ -106,40 +259,20 @@ def format_gemini_response(response_dict):
         formatted['disposal_recommendations'] = "Disposal recommendations:\n" + convert_to_bullet_points(text, keep_headings=False)
     
     # Generate summary based on available information if not already there
-    if not response_dict.get('summary') and response_dict.get('full_analysis'):
-        # Get material information
-        material_type = "Unknown"
-        if response_dict.get('material'):
-            material_type = response_dict.get('material')
-        elif 'material_detection' in response_dict and response_dict['material_detection'].get('primary_material'):
-            material_type = response_dict['material_detection']['primary_material'].capitalize()
+    if not response_dict.get('summary'):
+        # Get material information using the dedicated function
+        material_type = get_material_type(response_dict)
             
-        # Determine item description from full analysis
-        full_analysis_lower = response_dict.get('full_analysis', '').lower()
-        item_description = "Waste item"
-        if "bottle" in full_analysis_lower:
-            item_description = "Plastic bottle"
-        elif "container" in full_analysis_lower:
-            item_description = "Container"
-        elif "packaging" in full_analysis_lower:
-            item_description = "Packaging material"
-        elif "bag" in full_analysis_lower:
-            item_description = "Bag"
-        elif "cup" in full_analysis_lower:
-            item_description = "Cup"
-        elif "box" in full_analysis_lower:
-            item_description = "Box"
-        elif "device" in full_analysis_lower or "electronic" in full_analysis_lower:
-            item_description = "Electronic device"
+        # Get item description using the dedicated function
+        item_description = get_item_description(response_dict, material_type)
         
-        # Determine recyclability
-        recyclable = "Not recyclable"
-        if response_dict.get('is_recyclable'):
-            recyclable = "Recyclable"
-            
+        # Determine recyclability using dedicated function
+        recyclable = is_item_recyclable(response_dict)
+        
         # Create bullet point summary with HTML formatting
         formatted['summary'] = f'<div class="bullet-point">The image shows a {item_description}.</div><div class="bullet-point">It is primarily made of {material_type}.</div><div class="bullet-point">This item is {recyclable}.</div>'
     elif 'summary' in response_dict:
+        # If summary exists, keep it as is
         formatted['summary'] = response_dict['summary']
     
     return formatted
@@ -194,46 +327,15 @@ def extract_sections_from_raw_text(raw_text):
         text = disposal_match.group(1).strip()
         result["disposal_recommendations"] = "Disposal recommendations:\n" + convert_to_bullet_points(text, keep_headings=False)
     
-    # Create a concise summary in bullet points
-    material_type = ""
-    if "plastic" in raw_text.lower():
-        material_type = "Plastic"
-    elif "paper" in raw_text.lower():
-        material_type = "Paper"
-    elif "metal" in raw_text.lower():
-        material_type = "Metal"
-    elif "glass" in raw_text.lower():
-        material_type = "Glass"
-    elif "fabric" in raw_text.lower() or "textile" in raw_text.lower():
-        material_type = "Textile"
-    elif "electronic" in raw_text.lower() or "e-waste" in raw_text.lower():
-        material_type = "Electronic"
-    else:
-        material_type = "Mixed materials"
+    # Use dedicated functions for material, description, and recyclability
+    material_type = get_material_type({}, raw_text)
+    item_description = get_item_description({}, material_type, raw_text)
+    recyclable = is_item_recyclable({}, raw_text)
     
-    # Extract an item description
-    item_description = "Waste item"
-    if "bottle" in raw_text.lower():
-        item_description = "Plastic bottle"
-    elif "container" in raw_text.lower():
-        item_description = "Container"
-    elif "packaging" in raw_text.lower():
-        item_description = "Packaging material"
-    elif "bag" in raw_text.lower():
-        item_description = "Bag"
-    elif "cup" in raw_text.lower():
-        item_description = "Cup"
-    elif "box" in raw_text.lower():
-        item_description = "Box"
-    elif "device" in raw_text.lower() or "electronic" in raw_text.lower():
-        item_description = "Electronic device"
-    
-    # Determine recyclability
-    recyclable = "Not recyclable"
-    if "recyclable: yes" in raw_text.lower() or "is recyclable" in raw_text.lower():
-        recyclable = "Recyclable"
-    
-    # Format the bullet point summary with HTML formatting
+    # Create bullet point summary with HTML formatting
     result["summary"] = f'<div class="bullet-point">The image shows a {item_description}.</div><div class="bullet-point">It is primarily made of {material_type}.</div><div class="bullet-point">This item is {recyclable}.</div>'
+    
+    # Set e-waste flag based on analysis
+    result["is_e_waste"] = is_e_waste({}, material_type, raw_text)
     
     return result
