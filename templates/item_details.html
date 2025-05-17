@@ -20,7 +20,7 @@
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h2 class="card-title mb-0">{{ item.title }}</h2>
                     <div>
-                        {% set recyclable_materials = ['plastic', 'paper', 'metal', 'electronic', 'e-waste'] %}
+                        {% set recyclable_materials = ['plastic', 'paper', 'metal', 'electronic', 'e-waste','electronic'] %}
                         {% if item.material.lower() in recyclable_materials or item.is_recyclable %}
                             <span class="badge bg-success">
                                 <i class="fas fa-recycle me-1"></i> Recyclable
