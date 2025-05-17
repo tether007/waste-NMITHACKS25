@@ -172,15 +172,15 @@ def is_item_recyclable(response_dict, raw_text=""):
     Returns:
         String indicating recyclability status
     """
-    # Check if UI explicitly indicates recyclability
-    if response_dict.get('is_recyclable') == True or response_dict.get('recyclable') == "Yes":
-        return "Recyclable"
-    
     # Determine material type
     material_type = get_material_type(response_dict, raw_text).lower()
     
     # Always mark plastic as recyclable regardless of other indicators
     if material_type == "plastic":
+        return "Recyclable"
+    
+    # Check if UI explicitly indicates recyclability
+    if response_dict.get('is_recyclable') == True or response_dict.get('recyclable') == "Yes":
         return "Recyclable"
     
     # If explicitly marked as not recyclable and not plastic
@@ -269,6 +269,14 @@ def format_gemini_response(response_dict):
         text = re.sub(r'^(Disposal Recommendations:|Best Disposal Method:)\s*', '', text, flags=re.IGNORECASE)
         formatted['disposal_recommendations'] = "Disposal recommendations:\n" + convert_to_bullet_points(text, keep_headings=False)
     
+    # Get material information using the dedicated function
+    material_type = get_material_type(response_dict)
+    
+    # CRITICAL: Set is_recyclable flag based on material type
+    # This is what the template checks for displaying "Yes" or "No" in the UI
+    if material_type.lower() == "plastic":
+        formatted['is_recyclable'] = True
+    
     # Generate summary based on available information if not already there
     if not response_dict.get('summary'):
         # Get material information using the dedicated function
@@ -278,16 +286,16 @@ def format_gemini_response(response_dict):
         item_description = get_item_description(response_dict, material_type)
         
         # Determine recyclability using dedicated function
-        recyclable = is_item_recyclable(response_dict)
+        recyclable_status = is_item_recyclable(response_dict)
         
         # Create bullet point summary with HTML formatting
-        formatted['summary'] = f'<div class="bullet-point">The image shows a {item_description}.</div><div class="bullet-point">It is primarily made of {material_type}.</div><div class="bullet-point">This item is {recyclable}.</div>'
+        formatted['summary'] = f'<div class="bullet-point">The image shows a {item_description}.</div><div class="bullet-point">It is primarily made of {material_type}.</div><div class="bullet-point">This item is {recyclable_status}.</div>'
     elif 'summary' in response_dict:
         # If summary exists, keep it as is
         formatted['summary'] = response_dict['summary']
     
     return formatted
-
+    
 def extract_sections_from_raw_text(raw_text):
     """
     Extract different sections from a single raw text response.
@@ -341,12 +349,21 @@ def extract_sections_from_raw_text(raw_text):
     # Use dedicated functions for material, description, and recyclability
     material_type = get_material_type({}, raw_text)
     item_description = get_item_description({}, material_type, raw_text)
-    recyclable = is_item_recyclable({}, raw_text)
+    recyclable_status = is_item_recyclable({}, raw_text)
     
     # Create bullet point summary with HTML formatting
-    result["summary"] = f'<div class="bullet-point">The image shows a {item_description}.</div><div class="bullet-point">It is primarily made of {material_type}.</div><div class="bullet-point">This item is {recyclable}.</div>'
+    result["summary"] = f'<div class="bullet-point">The image shows a {item_description}.</div><div class="bullet-point">It is primarily made of {material_type}.</div><div class="bullet-point">This item is {recyclable_status}.</div>'
     
     # Set e-waste flag based on analysis
     result["is_e_waste"] = is_e_waste({}, material_type, raw_text)
+    
+    # IMPORTANT: Set is_recyclable flag correctly for the UI
+    if material_type.lower() == "plastic":
+        result["is_recyclable"] = True
+    # Otherwise base it on the recyclable status string
+    elif recyclable_status == "Recyclable":
+        result["is_recyclable"] = True
+    else:
+        result["is_recyclable"] = False
     
     return result
